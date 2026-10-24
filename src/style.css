@@ -50,3 +50,29 @@
 }
 @media(max-width:380px){.mobile-dock button{padding:8px 8px;font-size:12px}.table-heading h2{font-size:21px}}
 .block-row .art-unavailable{align-self:center;width:52px;height:38px!important;flex:0 0 52px;font-size:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;border-radius:4px;background:#253025}
+/* ——— 0.7 · contadores, fichas, maná, arrastrar ——— */
+.playcard{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}.playcard img{-webkit-user-drag:none}
+.counter-badge{position:absolute;left:3px;bottom:3px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;z-index:3;pointer-events:none}
+.counter-badge .chip{font:700 10px/1.2 'DM Sans',system-ui,sans-serif;padding:2px 5px;border-radius:5px;background:#0d1410e6;color:#f2e2b8;border:1px solid #d7b87988;white-space:nowrap;box-shadow:0 1px 3px #0008}
+.counter-badge .chip.pt.up{background:#1d3a20f0;color:#c9f0b4;border-color:#8fcf75}.counter-badge .chip.pt.down{background:#3a1d1df0;color:#ffc4b8;border-color:#ef8c7e}
+.card-mark.buffed{background:#1d3a20f0!important;color:#c9f0b4!important}.card-mark.hurt{background:#3a1d1df0!important;color:#ffc4b8!important}
+.counter-editor{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}.counter-editor h4{margin:0 0 6px}
+.counter-row{display:flex;align-items:center;gap:8px;padding:4px 0}.counter-row .name{flex:1}.counter-row b{min-width:24px;text-align:center;font-size:17px}.counter-row button{min-width:44px;min-height:44px;padding:4px}
+.counter-quick{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.counter-quick button{min-height:40px;padding:6px 10px}
+.take-box{border:1px solid var(--gold);border-radius:10px;padding:12px}
+.token-presets{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 12px}.token-presets button{min-height:40px;padding:6px 10px;font-size:13px}
+.check-row{display:flex;flex-wrap:wrap;gap:6px 14px;margin:4px 0 8px}.check-row .inline-check{display:inline-flex;align-items:center;gap:5px;min-height:36px}
+.fallback.token-face{background:linear-gradient(150deg,#3b4a37,#1c271d)}.fallback.token-face.W{background:linear-gradient(150deg,#e9e2c8,#9d977c);color:#1b1b14}.fallback.token-face.U{background:linear-gradient(150deg,#3f6f99,#1b324a)}.fallback.token-face.B{background:linear-gradient(150deg,#4b3f52,#16111a)}.fallback.token-face.R{background:linear-gradient(150deg,#a2493b,#45170f)}.fallback.token-face.G{background:linear-gradient(150deg,#4d7a3e,#1c3315)}
+.mana-grid{gap:6px}.mana-cell{display:flex;align-items:center;justify-content:space-between;gap:4px;border:1px solid var(--line);border-radius:9px;padding:4px;background:#0d151199}.mana-cell.has{border-color:var(--gold);background:#2a301e}.mana-cell b{min-width:18px;text-align:center;font-size:16px}.mana-cell button{min-width:36px;min-height:40px;padding:2px;font-size:17px}
+.zone-peek{min-height:36px!important;padding:4px 8px!important;font-size:12px}
+.zone-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}.zone-grid .playcard{width:100%;min-width:0;height:auto;aspect-ratio:63/88}.zone-grid .playcard img{width:100%;height:100%;object-fit:cover}
+.is-dragging{cursor:grabbing}.drag-source{opacity:.35}
+.drag-ghost{position:fixed;left:0;top:0;width:72px;z-index:1000;pointer-events:none;filter:drop-shadow(0 10px 18px #000c)}.drag-ghost img{width:100%;border-radius:6px;display:block}.drag-ghost span{display:block;padding:12px 6px;background:#2a3426;border:2px solid var(--gold);border-radius:6px;font-size:11px}
+.drop-bar{position:fixed;left:8px;right:8px;top:8px;z-index:999;display:flex;gap:6px;padding:6px;border-radius:12px;background:#0e1511f2;border:1px solid var(--gold);box-shadow:0 8px 24px #000a}
+.drop-chip{flex:1;text-align:center;padding:12px 2px;border-radius:8px;border:1px dashed #d7b87988;color:var(--gold);font-size:12px;font-weight:700}
+[data-drop].drop-over,.drop-chip.drop-over{outline:3px solid var(--gold);outline-offset:-3px;background:#d7b87926!important}
+.is-dragging [data-drop]:not(.drop-chip){outline:1px dashed #d7b87966;outline-offset:-2px}
+@media(max-width:760px){.mana-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+.mana-cell .mana{flex:0 0 auto}.mana-cell{min-width:0}.mana-cell button{flex:0 0 auto}
+.kw-badge{position:absolute;left:3px;top:3px;display:flex;flex-wrap:wrap;gap:2px;max-width:calc(100% - 6px);z-index:3;pointer-events:none}.kw-badge i{font-style:normal;font-size:11px;line-height:1;padding:3px;border-radius:5px;background:#0d1410d9;border:1px solid #d7b87966}.kw-badge i.granted{border-color:#8fcf75;background:#1d3a20f0}
+.kw-editor{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}.kw-editor h4{margin:0 0 6px}.kw-chips{display:flex;flex-wrap:wrap;gap:6px}.kw-chips button{min-height:40px;padding:6px 10px;font-size:13px}.kw-chips .kw-on{border-color:var(--gold);background:#3a3420}.kw-chips .kw-granted{border-color:#8fcf75;background:#1d3a20}

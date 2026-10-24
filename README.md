@@ -73,3 +73,13 @@ Inspiradas en las guías oficiales de Arena y MTGO (ver RESEARCH.md):
 ## Importar desde Archidekt en GitHub Pages
 
 Archidekt solo permite que su API la lean páginas de `localhost:3000`, y GitHub Pages no tiene servidor propio. Por eso la app usa un servicio pequeño en Cloudflare Workers: `https://mesa-commander-api.jaab0001.workers.dev/api/archidekt/ID`. Solo lee decks públicos por número, no envía cookies, quita los datos del dueño y responde con CORS únicamente a `juanalfonso11.github.io` y `localhost`. El código está en `proxy/worker.js` (para `npx wrangler deploy` desde `proxy/`) y la dirección se configura en `src/shell.html` (`MESA_CONFIG.archidektProxy`). Si el servicio falla, la importación por texto sigue funcionando.
+
+## Mesa táctil (0.7)
+
+- **Arrastrar cartas:** con el ratón, arrastra; en el móvil, mantén pulsada una carta tuya y arrástrala. Arriba aparece una barra con Campo, Mano, Cementerio, Exilio, Mando y Biblioteca, y también puedes soltar sobre las zonas del tapete. Una tierra soltada en el campo cuenta como tu tierra del turno. Un hechizo se lanza (paga con tus fuentes o tu reserva) y, si es tu turno y no hay ronda de respuestas, se resuelve solo.
+- **Fichas:** fichas comunes listas (Rata, Draco, Soldado, Zombi, Goblin, Saprolín, Bestia, Espíritu, Tesoro, Pista, Comida), cantidad de 1 a 20, tipo en inglés para que cuente en cartas como Rat Colony, colores, habilidades y «entra girada». Al tocar una ficha puedes duplicarla. Una ficha que sale del campo deja de existir.
+- **Contadores:** insignia abajo a la izquierda de la carta. Editor con − y + para +1/+1, -1/-1, +1/+0, +0/+1, -1/-0, -0/-1 y contadores con nombre (Lealtad, Carga…). La fuerza/resistencia mostrada ya incluye contadores, Rat Colony y daño marcado.
+- **Habilidades:** en una criatura del campo puedes dar o quitar vuela, prisa, vigilancia, arrollar, vínculo vital, toque mortal, alcance, amenaza, dañar primero, dañar dos veces, indestructible y defensor. Se ven como iconos arriba a la izquierda y el combate las aplica. Al salir del campo vuelve a sus habilidades impresas.
+- **Maná:** − y + por color y botón Vaciar. La reserva se conserva hasta que pasas el turno.
+- **Cementerio y exilio rivales:** se pueden ver desde su asiento y tomar una carta con «Tomar» (mano, campo, cementerio o exilio). La carta recuerda a su dueño y vuelve a sus zonas cuando muere o se exilia.
+- **Biblioteca:** la búsqueda muestra las cartas agrupadas y en orden alfabético, sin revelar su posición, con botón Barajar.

@@ -43,7 +43,7 @@ test('tap adds mana atomically once; explicit repeats, untap and manual tap do n
  s=act(s,'TAP',{iid:c.iid,tapped:true}).state;assert.equal(s.players[0].mana.B,1);
  s=act(s,'TAP',{iid:c.iid,tapped:false}).state;assert.equal(s.players[0].mana.B,1);
  s=act(s,'TAP',{iid:c.iid,tapped:true,produceMana:false}).state;assert.equal(s.players[0].mana.B,1);
- s=act(s,'NEXT_PHASE').state;assert.equal(s.players[0].mana.B,0);
+ s=act(s,'NEXT_PHASE').state;assert.equal(s.players[0].mana.B,1);s=act(s,'NEXT_TURN').state;assert.equal(s.players[0].mana.B,0);
  assert.equal(act(s,'TAP',{iid:c.iid,tapped:false},'b').ok,false);
 });
 test('playing a basic land produces no mana until tapped',()=>{
