@@ -69,3 +69,7 @@ Inspiradas en las guías oficiales de Arena y MTGO (ver RESEARCH.md):
 **Online.** El anfitrión envía un latido cada 5 s. Si un invitado pierde la conexión, la app reintenta sola durante unos 3 minutos y reenvía las acciones que no llegaron (no se aplican dos veces). El token del asiento se guarda en el navegador, así que cerrar la pestaña no te quita el asiento. Si el anfitrión recarga o sale, en Inicio aparece **Reabrir sala**: misma sala, mismo código, y los invitados vuelven solos. Sigue sin haber servidor TURN propio.
 
 **Móvil.** Barra fija abajo con fase, mano, maná, pila y la acción principal (Fase →, Resolver, Aplicar daño, ▶ Bot). En el teléfono el orden es: rivales → tu asiento → tu campo → tu mano → zonas → maná y pila. Botones táctiles de 42–44 px, barra de herramientas desplazable y acciones fijas al pie de los diálogos.
+
+## Importar desde Archidekt en GitHub Pages
+
+Archidekt solo permite que su API la lean páginas de `localhost:3000`, y GitHub Pages no tiene servidor propio. Por eso la app usa un servicio pequeño en Cloudflare Workers: `https://mesa-commander-api.jaab0001.workers.dev/api/archidekt/ID`. Solo lee decks públicos por número, no envía cookies, quita los datos del dueño y responde con CORS únicamente a `juanalfonso11.github.io` y `localhost`. El código está en `proxy/worker.js` (para `npx wrangler deploy` desde `proxy/`) y la dirección se configura en `src/shell.html` (`MESA_CONFIG.archidektProxy`). Si el servicio falla, la importación por texto sigue funcionando.
