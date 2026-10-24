@@ -1,0 +1,38 @@
+{
+  "Swamp": {
+    "id": "b233b117-9369-45c1-80c5-cc857386b6be",
+    "artist": "Maojin Lee",
+    "normal": "./cards/swamp.jpg",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/b/2/b233b117-9369-45c1-80c5-cc857386b6be.jpg?1791578437"
+  },
+  "Island": {
+    "id": "1335d293-3dd2-4f13-bd2c-22181f4528ee",
+    "artist": "Eren Arik",
+    "normal": "./cards/island.jpg",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/1/3/1335d293-3dd2-4f13-bd2c-22181f4528ee.jpg?1791578424"
+  },
+  "Rat Colony": {
+    "id": "4f618e07-f06f-45d2-8512-e6cef88c0434",
+    "artist": "Suzanne Helmigh",
+    "normal": "./cards/rat-colony.jpg",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/4/f/4f618e07-f06f-45d2-8512-e6cef88c0434.jpg?1783935003"
+  },
+  "Marrow-Gnawer": {
+    "id": "72e4548b-c171-4f10-b896-af37543dcf0f",
+    "artist": "Wayne Reynolds",
+    "normal": "./cards/marrow-gnawer.jpg",
+    "art_crop": "./cards/marrow-gnawer-art.jpg"
+  },
+  "Persistent Petitioners": {
+    "id": "27be522d-bdef-4a95-a405-98247c58b71a",
+    "artist": "Jason Rainville",
+    "normal": "./cards/persistent-petitioners.jpg",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/2/7/27be522d-bdef-4a95-a405-98247c58b71a.jpg?1783913335"
+  },
+  "Talrand, Sky Summoner": {
+    "id": "1be3ed47-072e-481a-b3d9-dc232ac4b24f",
+    "artist": "Svetlin Velinov",
+    "normal": "./cards/talrand.jpg",
+    "art_crop": "./cards/talrand-art.jpg"
+  }
+}

@@ -1,0 +1,6 @@
+const CACHE='mesa-commander-v7-reglas-20261023';
+const ROOT=new URL('./',self.location.href).href;
+const ASSETS=['./','./index.html','./icon.svg','./icon-192.png','./icon-512.png','./manifest.webmanifest','./peerjs.min.js','./cards/swamp.jpg','./cards/island.jpg','./cards/rat-colony.jpg','./cards/marrow-gnawer.jpg','./cards/persistent-petitioners.jpg','./cards/talrand.jpg','./cards/marrow-gnawer-art.jpg','./cards/talrand-art.jpg'].map(p=>new URL(p,ROOT).href);
+self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
+self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('mesa-commander-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
+self.addEventListener('fetch',e=>{if(new URL(e.request.url).pathname.startsWith('/api/'))return;if(e.request.method!=='GET'||new URL(e.request.url).origin!==self.location.origin)return;if(e.request.mode==='navigate'){e.respondWith(fetch(e.request).then(r=>{if(r.ok){const x=r.clone();caches.open(CACHE).then(c=>c.put(new URL('./index.html',ROOT).href,x));}return r;}).catch(()=>caches.match(new URL('./index.html',ROOT).href)));}else if(ASSETS.includes(e.request.url)){e.respondWith(caches.match(e.request).then(c=>c||fetch(e.request)));}});

@@ -1,0 +1,26 @@
+MESA COMMANDER 0.6.0 — CÓDIGO COMPLETO
+
+1. Esta carpeta es la versión 0.6.0 (la 0.5.0 sigue intacta en mesa-commander-v0.5.0).
+2. Lee README.md para funciones, instalación y límites.
+3. public/ contiene la web ya compilada, imágenes y archivos PWA.
+   Para probarla con Python instalado:
+      python -m http.server 8000 --directory public
+   Abre http://localhost:8000
+4. Para editar: src/ contiene motor, datos, interfaz, estilos, red y servidor.
+   Con Node.js instalado:
+      npm install
+      npm test
+      node build.cjs
+   Ese último comando regenera public/index.html.
+5. Para compilar además el Worker: npm run build (requiere Bash; en Windows
+   utiliza WSL o Git Bash). worker/index.js y dist/server/index.js ya están incluidos.
+6. GitHub Pages: publica el contenido de public/. No ejecuta el servidor
+   /api/archidekt; la importación por enlace puede fallar por CORS. Puedes
+   importar texto exportado o desplegar el Worker incluido en un entorno compatible.
+7. No incluye node_modules ni historial Git. npm install instala las dependencias
+   de desarrollo. No contiene partidas ni decks personales guardados en tu navegador;
+   esos datos se exportan desde la app.
+
+Novedades 0.6: efectos automáticos desde el texto de las cartas, tierras duales y artefactos de maná,
+combate con bloqueadores, bots que eligen objetivos y bloquean, reconexión online y barra de acciones en móvil.
+Detalles en README.md (sección 0.6) y STATUS.md.
