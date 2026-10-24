@@ -7,7 +7,7 @@ const {webcrypto}=require('node:crypto');
 const MC=require('../src/core.js');
 const card=(name)=>({name,type_line:'Creature',mana_cost:'{1}',color_identity:[],legalities:{commander:'legal'},power:'1',toughness:'1'});
 const deck=(name)=>({commander:{...card(name+' commander'),type_line:'Legendary Creature'},cards:Array.from({length:99},(_,i)=>card(name+' secret '+i))});
-class Conn extends EventEmitter{constructor(id){super();this.peer=id;this.open=true;this.sent=[];}send(x){this.sent.push(JSON.parse(JSON.stringify(x)));}close(){this.open=false;this.emit('close');}receive(x){this.emit('data',x);}latest(type){return this.sent.filter(x=>x.type===type).at(-1);}}
+class Conn extends EventEmitter{constructor(id){super();this.peer=id;this.open=true;this.sent=[];}send(x){const v=JSON.parse(JSON.stringify(x));if(v.type==='chunk'){this.parts=this.parts||{};const l=this.parts[v.id]=this.parts[v.id]||[];l[v.i]=v.part;if(l.filter(x=>x!==undefined).length===v.n)this.sent.push(JSON.parse(decodeURIComponent(l.join(''))));return;}this.sent.push(v);}close(){this.open=false;this.emit('close');}receive(x){this.emit('data',x);}latest(type){return this.sent.filter(x=>x.type===type).at(-1);}}
 async function setup(){
  let peer;const events={states:[],rosters:[],chats:[],errors:[]};
  class Peer extends EventEmitter{constructor(id){super();this.id=id;this.open=true;peer=this;queueMicrotask(()=>this.emit('open',id));}destroy(){this.open=false;}}

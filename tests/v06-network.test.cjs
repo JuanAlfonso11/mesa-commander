@@ -19,7 +19,8 @@ function env(){
  return ctx;
 }
 function load(ctx,peers){
- class Conn extends EventEmitter{constructor(id,remote){super();this.peer=id;this.open=false;this.sent=[];this.remote=remote;}send(x){this.sent.push(JSON.parse(JSON.stringify(x)));if(this.remote)this.remote.emit('data',JSON.parse(JSON.stringify(x)));}close(){if(!this.open)return;this.open=false;this.emit('close');if(this.remote&&this.remote.open){this.remote.open=false;this.remote.emit('close');}}latest(type){return this.sent.filter(x=>x.type===type).at(-1);}}
+ class Conn extends EventEmitter{constructor(id,remote){super();this.peer=id;this.open=false;this.sent=[];this.remote=remote;}send(x){this.sent.push(JSON.parse(JSON.stringify(x)));if(this.remote&&JSON.stringify(x).length>16000)return;// WebRTC real descarta mensajes grandes
+  if(this.remote)this.remote.emit('data',JSON.parse(JSON.stringify(x)));}close(){if(!this.open)return;this.open=false;this.emit('close');if(this.remote&&this.remote.open){this.remote.open=false;this.remote.emit('close');}}latest(type){return this.sent.filter(x=>x.type===type).at(-1);}}
  class Peer extends EventEmitter{constructor(id){super();this.id=id||'anon-'+Math.random();this.open=true;this.destroyed=false;peers.list.push(this);queueMicrotask(()=>this.emit('open',this.id));}
   connect(target){const host=peers.list.find(p=>p.id===target&&!p.destroyed);const mine=new Conn(target,null);(peers.conns||(peers.conns=[])).push(mine);if(!host){queueMicrotask(()=>this.emit('error',{type:'peer-unavailable'}));return mine;}const theirs=new Conn(this.id,mine);mine.remote=theirs;queueMicrotask(()=>{mine.open=theirs.open=true;host.emit('connection',theirs);mine.emit('open');});return mine;}
   destroy(){this.destroyed=true;this.open=false;}reconnect(){}}
@@ -89,4 +90,12 @@ test('network 0.6: action made while offline is kept, resent after automatic rec
  assert.equal(x.ge.welcome.length,2);assert.equal(x.G.pendingCount,0);
  const life=x.ge.states.at(-1).players[1].life;assert.equal(life,35);
  x.G.rejoin();for(let i=0;i<8;i++)await tick();assert.equal(x.ge.states.at(-1).players[1].life,35);
+});
+
+test('network 0.6: decks y estados grandes viajan en trozos pequeños y se reconstruyen',async()=>{
+ const x=await pair();assert.deepEqual(x.ge.welcome,['p2']);x.H.start();await tick();
+ const all=x.peers.conns.flatMap(c=>[...c.sent,...(c.remote?c.remote.sent:[])]);
+ assert(all.some(m=>m.type==='chunk'),'hubo mensajes troceados');
+ assert(all.every(m=>JSON.stringify(m).length<=12200),'ningún mensaje supera el límite');
+ assert.equal(x.ge.states.at(-1).players[1].hand.length,7);
 });

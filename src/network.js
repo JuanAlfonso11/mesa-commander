@@ -12,7 +12,16 @@ function tokenFor(r){try{return root.localStorage?.getItem('mesa-token-'+r)||roo
 function saveToken(r,t){try{root.localStorage?.setItem('mesa-token-'+r,t);}catch{}try{root.sessionStorage?.setItem('mesa-token-'+r,t);}catch{}}
 const every=(fn,ms)=>typeof root.setInterval==='function'?root.setInterval(fn,ms):null;
 const stopEvery=id=>{if(id!==null&&typeof root.clearInterval==='function')root.clearInterval(id);};
-function safeSend(c,data){if(c?.open)try{c.send(data);}catch{emit('error','No se pudo enviar el cambio. Revisa la conexión.');}}
+// Los canales WebRTC descartan en silencio los mensajes grandes (~16 KB). Todo lo que pase de CHUNK
+// (decks, estado de la mesa) se codifica en ASCII sin comillas y se envía en trozos numerados.
+const CHUNK=12000,MAX_PARTS=200;let msgSeq=0;
+function safeSend(c,data){if(!c?.open)return;try{const text=JSON.stringify(data);if(text.length<=CHUNK/2){c.send(data);return;}const enc=encodeURIComponent(text);const id=(++msgSeq).toString(36)+'-'+now().toString(36),n=Math.ceil(enc.length/CHUNK);if(n>MAX_PARTS)throw Error('Mensaje demasiado grande.');for(let i=0;i<n;i++)c.send({type:'chunk',id,i,n,part:enc.slice(i*CHUNK,(i+1)*CHUNK)});}catch{emit('error','No se pudo enviar el cambio. Revisa la conexión.');}}
+function assembler(){const parts=new Map();return raw=>{
+ if(!raw||typeof raw!=='object'||raw.type!=='chunk')return raw;
+ const {id,i,n,part}=raw;if(typeof id!=='string'||id.length>40||!Number.isInteger(n)||!Number.isInteger(i)||n<1||n>MAX_PARTS||i<0||i>=n||typeof part!=='string'||part.length>CHUNK||!/^[A-Za-z0-9%\-_.!~*'()]*$/.test(part))return null;
+ let e=parts.get(id);if(!e){if(parts.size>=6)parts.delete(parts.keys().next().value);e={n,got:0,list:new Array(n)};parts.set(id,e);}
+ if(e.n!==n||e.list[i]!==undefined)return null;e.list[i]=part;e.got++;if(e.got<n)return null;
+ parts.delete(id);try{return JSON.parse(decodeURIComponent(e.list.join('')));}catch{return null;}};}
 function publicSeats(){return seats.map(p=>({id:p.id,name:p.name,bot:p.bot,connected:p.id==='p1'||!![...links.values()].find(x=>x.id===p.id&&x.conn.open)}));}
 function persistHost(){if(host&&room)store.set(HOST_KEY,{room,seats,game,started,savedAt:now()});}
 function broadcast(){for(const x of links.values())if(x.id)safeSend(x.conn,{type:'state',state:MC.viewFor(game,x.id)});persistHost();emit('state',game);}
@@ -25,8 +34,8 @@ function reset(){closing=true;clearTimeout(timer);stopRetry();stopEvery(beat);be
 // El anfitrión vuelve a registrarse en el servidor de señalización si el móvil suspendió la conexión.
 function watchSignal(p){p.on('disconnected',()=>{if(closing||p!==peer||p.destroyed)return;emit('status','Reconectando con el servidor de salas…');let n=0;const again=()=>{if(p!==peer||p.destroyed||p.open)return;try{p.reconnect();}catch{}if(++n<MAX_RETRY)setTimeout(again,Math.min(30000,1500*2**n));};setTimeout(again,800);});}
 function heartbeatHost(){stopEvery(beat);beat=every(()=>{const t=now();for(const [key,x] of links){if(!x.conn.open)continue;if(t-x.last>25000){try{x.conn.close();}catch{}links.delete(key);roster();continue;}safeSend(x.conn,{type:'ping',t});}},5000);}
-function attach(c){const record={conn:c,id:null,last:now()};links.set(c.peer,record);let last=0,count=0;
-c.on('data',data=>{try{if(!data||typeof data!=='object'||JSON.stringify(data).length>1800000)return;record.last=now();if(data.type==='pong')return;if(now()-last>1000){last=now();count=0;}if(++count>30)return;
+function attach(c){const record={conn:c,id:null,last:now()};links.set(c.peer,record);let last=0,count=0,rawLast=0,rawCount=0;const unpack=assembler();
+c.on('data',raw=>{try{record.last=now();if(now()-rawLast>1000){rawLast=now();rawCount=0;}if(++rawCount>400)return;const data=unpack(raw);if(!data||typeof data!=='object'||JSON.stringify(data).length>1800000)return;if(data.type==='pong')return;if(now()-last>1000){last=now();count=0;}if(++count>30)return;
 if(data.type==='hello'){if(record.id){const assigned=seats.find(p=>p.id===record.id);safeSend(c,{type:'welcome',id:assigned.id,token:assigned.token});return;}let seat=seats.find(p=>p.token&&p.token===data.token);if(!seat){if(started)throw Error('La partida ya comenzó. Solo se permite reconectar con el mismo navegador.');seat=seats.find(p=>p.bot);if(!seat)throw Error('La sala está llena.');seat.name=String(data.name||'Invitado').slice(0,40);seat.deck=checkDeck(data.deck);seat.bot=false;seat.token=MD.uid();}for(const other of links.values())if(other!==record&&other.id===seat.id)other.conn.close();record.id=seat.id;safeSend(c,{type:'welcome',id:seat.id,token:seat.token,started});roster();persistHost();if(game)safeSend(c,{type:'state',state:MC.viewFor(game,seat.id)});return;}
 if(!record.id)return;
 if(data.type==='action'&&game){const action={...data.action,actorId:record.id};const r=MC.dispatch(game,action);if(r.ok){game=r.state;broadcast();safeSend(c,{type:'ack',id:action.id});}else safeSend(c,{type:'error',message:r.error,id:action.id});}
@@ -47,9 +56,9 @@ async function create(config,on){reset();callbacks=on;host=true;seats=config.pla
 async function resumeHost(on){const saved=store.get(HOST_KEY);if(!saved?.room||!Array.isArray(saved.seats))throw Error('No hay una sala guardada para reabrir.');reset();callbacks=on;host=true;room=saved.room;seats=saved.seats;game=saved.game||null;started=!!saved.started&&!!game;await loadPeer();const r=await new Promise((resolve,reject)=>openHostPeer('mesa-v1-'+room,resolve,reject));if(game)emit('state',game);return r;}
 function connectToHost(){
  if(!peer||peer.destroyed){peer=new Peer();peer.on('error',e=>{if(!everWelcomed){error(e);return;}if(e?.type==='peer-unavailable'){scheduleRetry();return;}error(e);if(!server?.open)scheduleRetry();});peer.on('disconnected',()=>{if(!closing&&peer&&!peer.destroyed)try{peer.reconnect();}catch{}});}
- const go=()=>{const conn=peer.connect('mesa-v1-'+room,{reliable:true,serialization:'json'});server=conn;
+ const go=()=>{const conn=peer.connect('mesa-v1-'+room,{reliable:true,serialization:'json'});server=conn;const unpack=assembler();
   conn.on('open',()=>{lastFromHost=now();safeSend(conn,{type:'hello',name:joinConfig.name,deck:joinConfig.deck,token:reconnectToken});});
-  conn.on('data',d=>{if(conn!==server)return;lastFromHost=now();
+  conn.on('data',raw=>{if(conn!==server)return;lastFromHost=now();const d=unpack(raw);if(!d||typeof d!=='object')return;
    if(d.type==='ping'){safeSend(conn,{type:'pong',t:d.t});return;}
    if(d.type==='welcome'){everWelcomed=true;myId=d.id;reconnectToken=d.token;saveToken(room,d.token);store.set(GUEST_KEY,{room,name:joinConfig.name,id:d.id,savedAt:now()});const wasRetry=retry.active;stopRetry();emit('welcome',d.id);emit('connected',room);if(wasRetry)emit('status','Reconectado a la sala '+room+'.');for(const a of pending.values())safeSend(conn,{type:'action',action:a});}
    if(d.type==='state'){started=true;emit('state',d.state);}
