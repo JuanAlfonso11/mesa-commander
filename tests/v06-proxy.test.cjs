@@ -33,3 +33,12 @@ test('worker: CORS solo para la app y sigue limitado a la ruta fija de decks',as
  assert.equal(pre.status,204);
  const before=upstream;const bad=await handle.fetch(new Request('https://api.ex/otra-cosa?url=https://evil'));assert.equal(bad.status,404);assert.equal(upstream,before);
 });
+
+test('worker: /api/ice genera credenciales TURN con los secretos y quita el puerto 53; sin secretos responde 503',async()=>{
+ const calls=[];const handle=worker(async(url,opt)=>{calls.push([url,opt.headers.Authorization]);return new Response(JSON.stringify({iceServers:[{urls:['stun:stun.cloudflare.com:3478','stun:stun.cloudflare.com:53']},{urls:['turn:turn.cloudflare.com:3478?transport=udp','turn:turn.cloudflare.com:53?transport=udp','turns:turn.cloudflare.com:443?transport=tcp'],username:'u',credential:'c'}]}),{status:201});});
+ const r=await handle.fetch(new Request('https://api.ex/api/ice',{headers:{Origin:'https://juanalfonso11.github.io'}}),{TURN_KEY_ID:'k1',TURN_KEY_API_TOKEN:'t1'});
+ assert.equal(r.status,200);assert.equal(r.headers.get('access-control-allow-origin'),'https://juanalfonso11.github.io');
+ const j=await r.json();assert.deepEqual(j.iceServers[1].urls,['turn:turn.cloudflare.com:3478?transport=udp','turns:turn.cloudflare.com:443?transport=tcp']);assert.equal(j.iceServers[1].credential,'c');
+ assert.deepEqual(calls,[['https://rtc.live.cloudflare.com/v1/turn/keys/k1/credentials/generate-ice-servers','Bearer t1']]);
+ assert.equal((await handle.fetch(new Request('https://api.ex/api/ice'),{})).status,503);
+});

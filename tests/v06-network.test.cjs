@@ -21,7 +21,7 @@ function env(){
 function load(ctx,peers){
  class Conn extends EventEmitter{constructor(id,remote){super();this.peer=id;this.open=false;this.sent=[];this.remote=remote;}send(x){this.sent.push(JSON.parse(JSON.stringify(x)));if(this.remote&&JSON.stringify(x).length>16000)return;// WebRTC real descarta mensajes grandes
   if(this.remote)this.remote.emit('data',JSON.parse(JSON.stringify(x)));}close(){if(!this.open)return;this.open=false;this.emit('close');if(this.remote&&this.remote.open){this.remote.open=false;this.remote.emit('close');}}latest(type){return this.sent.filter(x=>x.type===type).at(-1);}}
- class Peer extends EventEmitter{constructor(id){super();this.id=id||'anon-'+Math.random();this.open=true;this.destroyed=false;peers.list.push(this);queueMicrotask(()=>this.emit('open',this.id));}
+ class Peer extends EventEmitter{constructor(id,opts){super();if(id&&typeof id==='object'){opts=id;id=undefined;}this.opts=opts;this.id=id||'anon-'+Math.random();this.open=true;this.destroyed=false;peers.list.push(this);queueMicrotask(()=>this.emit('open',this.id));}
   connect(target){const host=peers.list.find(p=>p.id===target&&!p.destroyed);const mine=new Conn(target,null);(peers.conns||(peers.conns=[])).push(mine);if(!host){queueMicrotask(()=>this.emit('error',{type:'peer-unavailable'}));return mine;}const theirs=new Conn(this.id,mine);mine.remote=theirs;queueMicrotask(()=>{mine.open=theirs.open=true;host.emit('connection',theirs);mine.emit('open');});return mine;}
   destroy(){this.destroyed=true;this.open=false;}reconnect(){}}
  ctx.Peer=Peer;vm.createContext(ctx);vm.runInContext(fs.readFileSync(require.resolve('../src/network.js'),'utf8'),ctx);return ctx.MN;
@@ -98,4 +98,14 @@ test('network 0.6: decks y estados grandes viajan en trozos pequeños y se recon
  assert(all.some(m=>m.type==='chunk'),'hubo mensajes troceados');
  assert(all.every(m=>JSON.stringify(m).length<=12200),'ningún mensaje supera el límite');
  assert.equal(x.ge.states.at(-1).players[1].hand.length,7);
+});
+
+test('network: anfitrión e invitado usan los servidores TURN del Worker',async()=>{
+ const ice=[{urls:'turns:turn.cloudflare.com:443?transport=tcp',username:'u',credential:'c'}];
+ const peers={list:[]},hc=env(),gc=env();
+ for(const c of [hc,gc]){c.MESA_CONFIG={archidektProxy:'https://api.ex'};c.AbortController=AbortController;c.fetch=async url=>{assert.equal(url,'https://api.ex/api/ice');return {ok:true,json:async()=>({iceServers:ice})};};}
+ const H=load(hc,peers),G=load(gc,peers);const noop=()=>{};
+ await H.create({players:[{id:'p1',name:'Host',deck:deck('H')},{id:'p2',name:'G',deck:deck('G')}]},{state:noop,roster:noop,error:noop,connected:noop});
+ await G.join(H.room,{name:'G',deck:deck('G')},{state:noop,status:noop,welcome:noop,error:noop,disconnected:noop,roster:noop,connected:noop});
+ assert.equal(peers.list.length,2);for(const p of peers.list)assert.deepEqual(p.opts.config.iceServers,ice);
 });

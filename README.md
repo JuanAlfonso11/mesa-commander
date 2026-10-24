@@ -92,3 +92,14 @@ En pantallas estrechas la mesa entra en un modo de partida a pantalla completa:
 - La mano queda fija abajo; se puede plegar y arrastrar cartas directamente al campo.
 - El botón de fase (Inicio ⋯) abre un menú con todas las acciones: pasar turno, robar, fichas, atacar, buscar en la biblioteca, barajar, registro, chat, vidas, mulligan, guardar y salir.
 - Los rivales se muestran en filas compactas y los diálogos aparecen como hojas desde abajo.
+
+## Juego online entre redes distintas (servidor TURN)
+
+WebRTC conecta directo cuando puede; entre datos móviles o redes con NAT estricto necesita un relé TURN.
+El Worker expone `/api/ice`, que genera credenciales temporales de Cloudflare Realtime TURN (1.000 GB/mes gratis).
+
+1. En Cloudflare: Realtime → TURN Server → crear una clave. Copia el *Turn Token ID* y el *API Token*.
+2. En el Worker `mesa-commander-api` → Settings → Variables and Secrets: añade los secretos `TURN_KEY_ID` y `TURN_KEY_API_TOKEN`.
+3. Pega `proxy/worker-dashboard.js` en el editor del Worker y despliega.
+
+Sin esos secretos la app sigue funcionando con los servidores por defecto de PeerJS.
