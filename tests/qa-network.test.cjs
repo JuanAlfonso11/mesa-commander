@@ -61,7 +61,7 @@ test('network regression: repeat hello cannot consume a second player slot',asyn
 test('network virtual actions: forged actor cannot spend host lands, pass for host or disable response checks',async()=>{
  const x=await setup(),c=x.attach();x.hello(c);const s=x.MN.start();
  const island=(iid)=>({iid,name:'Island',type_line:'Basic Land — Island',tapped:false});
- s.responseChecks=true;s.players[0].battlefield=[island('host-source')];s.players[1].battlefield=[island('guest-source')];s.players[1].hand[0].mana_cost='{U}';
+ s.responseChecks=true;s.players[0].battlefield=[island('host-source')];s.players[1].battlefield=[island('guest-source')];s.players[1].hand[0].mana_cost='{U}';s.players[1].hand[0].type_line='Instant';
  x.MN.sync(s);const iid=s.players[1].hand[0].iid;
  c.receive({type:'action',action:{id:'foreign-source',actorId:'p1',type:'CAST',payload:{iid,autoPay:true,autoPayRevision:0,landIds:['host-source']}}});
  assert(c.latest('error'));assert.equal(x.events.states.at(-1).revision,0);assert.equal(x.events.states.at(-1).players[0].battlefield[0].tapped,false);
