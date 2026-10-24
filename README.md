@@ -83,3 +83,12 @@ Archidekt solo permite que su API la lean páginas de `localhost:3000`, y GitHub
 - **Maná:** − y + por color y botón Vaciar. La reserva se conserva hasta que pasas el turno.
 - **Cementerio y exilio rivales:** se pueden ver desde su asiento y tomar una carta con «Tomar» (mano, campo, cementerio o exilio). La carta recuerda a su dueño y vuelve a sus zonas cuando muere o se exilia.
 - **Biblioteca:** la búsqueda muestra las cartas agrupadas y en orden alfabético, sin revelar su posición, con botón Barajar.
+
+## Partida en el móvil (0.7.1)
+
+En pantallas estrechas la mesa entra en un modo de partida a pantalla completa:
+
+- La barra superior, el menú inferior, el título y la barra de fases se ocultan durante la partida.
+- La mano queda fija abajo; se puede plegar y arrastrar cartas directamente al campo.
+- El botón de fase (Inicio ⋯) abre un menú con todas las acciones: pasar turno, robar, fichas, atacar, buscar en la biblioteca, barajar, registro, chat, vidas, mulligan, guardar y salir.
+- Los rivales se muestran en filas compactas y los diálogos aparecen como hojas desde abajo.

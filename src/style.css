@@ -76,3 +76,69 @@
 .mana-cell .mana{flex:0 0 auto}.mana-cell{min-width:0}.mana-cell button{flex:0 0 auto}
 .kw-badge{position:absolute;left:3px;top:3px;display:flex;flex-wrap:wrap;gap:2px;max-width:calc(100% - 6px);z-index:3;pointer-events:none}.kw-badge i{font-style:normal;font-size:11px;line-height:1;padding:3px;border-radius:5px;background:#0d1410d9;border:1px solid #d7b87966}.kw-badge i.granted{border-color:#8fcf75;background:#1d3a20f0}
 .kw-editor{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}.kw-editor h4{margin:0 0 6px}.kw-chips{display:flex;flex-wrap:wrap;gap:6px}.kw-chips button{min-height:40px;padding:6px 10px;font-size:13px}.kw-chips .kw-on{border-color:var(--gold);background:#3a3420}.kw-chips .kw-granted{border-color:#8fcf75;background:#1d3a20}
+/* ——— 0.7.1 · modo partida en el teléfono ——— */
+.menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}.menu-tile{min-height:56px;text-align:left;font-size:14px;padding:10px 12px}.menu-tile.strong{grid-column:1/-1;background:var(--gold);color:#171c16;font-weight:700;border-color:var(--gold)}
+.menu-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;border-top:1px solid var(--line);padding-top:12px}.menu-links button{flex:1;min-height:44px}
+.chat-log{max-height:45vh;overflow:auto;margin-bottom:10px}
+@media(max-width:760px){
+ /* Más espacio para jugar: sin barra superior ni menú inferior durante la partida */
+ body.in-game .topbar,body.in-game .sidebar{display:none}
+ body.in-game .content{padding:8px 8px 210px!important}
+ body.in-game .table-heading,body.in-game .table-turnbar,body.in-game .table-prompt,body.in-game .table-activity,body.in-game .playmat-caption{display:none}
+ body.in-game .commander-playmat{padding:8px 6px;border-radius:12px}
+ /* Mano fija abajo (dentro del dock) */
+ body.in-game .hand-zone{display:none}
+ .mobile-dock{position:fixed!important;left:0;right:0;bottom:0;margin:0!important;border-radius:16px 16px 0 0!important;padding:6px 8px calc(8px + env(safe-area-inset-bottom))!important;flex-direction:column;align-items:stretch!important;gap:6px!important;z-index:40!important}
+ .dock-hand{display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;padding:4px 2px 6px;min-height:98px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+ .dock-hand .playcard{width:66px;min-width:66px;height:92px;min-height:92px;border-width:2px;border-radius:5px;scroll-snap-align:start}
+ .dock-hand .playcard img{height:100%;width:100%;object-fit:cover}
+ .dock-hand .playcard .card-mark{font-size:10px;padding:1px 4px}.dock-hand .affordable-label{font-size:8px;padding:1px 3px}
+ .dock-empty{color:var(--muted);font-size:12px;align-self:center;padding:0 8px}
+ .dock-bar{display:flex;align-items:center;gap:6px}
+ .dock-bar .dock-phase{flex:1;min-width:0;display:grid;text-align:left;line-height:1.15;background:transparent;border:1px solid transparent;padding:4px 6px;min-height:44px}
+ .dock-bar .dock-phase small{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dock-bar .dock-phase b{font-size:14px;color:var(--gold)}
+ .dock-bar>button{min-height:46px;padding:8px 10px;font-size:14px;flex:0 0 auto}.dock-mana-on{border-color:var(--gold)!important;color:var(--gold)}
+ .drop-bar{top:8px}
+ /* Rivales compactos: una fila por rival */
+ body.in-game .opponents-row{flex-direction:column;overflow:visible;gap:6px;padding-bottom:4px;scroll-snap-type:none}
+ body.in-game .opponent-seat{flex:none!important;width:100%;padding:8px 10px!important;display:grid;grid-template-columns:1fr auto;gap:4px 8px;align-items:center}
+ body.in-game .opponent-seat .seat-header{display:contents}
+ body.in-game .opponent-seat .seat-header>div:first-child{grid-column:1;display:flex;align-items:baseline;gap:8px;min-width:0}
+ body.in-game .opponent-seat .seat-header strong{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ body.in-game .opponent-seat .seat-status{font-size:9px}
+ body.in-game .opponent-seat .seat-life{grid-column:2;grid-row:1/3}
+ body.in-game .opponent-seat .seat-life .life{font-size:30px}
+ body.in-game .opponent-counts{grid-column:1;gap:6px;font-size:11px}
+ body.in-game .opponent-counts>button:not(.zone-peek){display:none}
+ body.in-game .opponent-field{grid-column:1/-1;display:flex;gap:6px;align-items:flex-start;border-top:1px solid #8d966230;padding-top:6px;margin:0}
+ body.in-game .opponent-command{flex:0 0 auto}body.in-game .opponent-battle{flex:1;min-width:0}
+ body.in-game .opponent-field .micro-label{display:none}
+ body.in-game .opponent-seat .playcard{width:44px!important;min-width:44px!important;height:62px!important;min-height:62px!important;border-width:1px}
+ body.in-game .opponent-seat .playcard .card-mark{font-size:9px;padding:0 3px}
+ body.in-game .opponent-seat .opponent-empty{min-height:0!important;padding:14px 6px;font-size:11px}
+ body.in-game .opponent-seat .kw-badge,body.in-game .opponent-seat .counter-badge .chip:not(.pt){display:none}
+ body.in-game .table-divider{display:none}
+ /* Tu asiento compacto */
+ body.in-game .own-seat-header{padding:6px 2px 8px;flex-wrap:nowrap;align-items:center}
+ body.in-game .own-identity strong{font-size:19px}body.in-game .own-seat-actions{display:none}
+ body.in-game .field-heading h3{font-size:18px}
+ /* Diálogos como hoja inferior */
+ dialog{margin:auto auto 0;width:100%!important;max-width:100%!important;max-height:88dvh!important;border-radius:18px 18px 0 0!important;border-bottom:0!important}
+ dialog[open]{animation:sheet-up .18s ease-out}
+ .dialog-head h2{font-size:24px}
+}
+@keyframes sheet-up{from{transform:translateY(30px);opacity:.6}to{transform:none;opacity:1}}
+@media(prefers-reduced-motion:reduce){dialog[open]{animation:none}}
+@media(max-width:760px){
+ body.in-game .opponent-seat{padding:6px 8px!important;gap:2px 8px}
+ body.in-game .opponent-seat .seat-life{gap:3px}
+ body.in-game .opponent-seat .seat-life button{width:36px!important;min-width:36px!important;min-height:36px!important;font-size:16px}
+ body.in-game .opponent-seat .seat-life .life{font-size:24px;min-width:34px}body.in-game .opponent-seat .seat-life .life small{display:none}
+ body.in-game .opponent-counts{flex-wrap:nowrap;white-space:nowrap;overflow:hidden;font-size:11px}
+ body.in-game .opponent-counts>span:nth-child(2){display:none}
+ body.in-game .zone-peek{min-height:36px!important;padding:2px 8px!important;font-size:11px!important}
+ body.in-game .opponent-field{padding-top:4px}
+ body.in-game .opponent-seat .playcard{width:40px!important;min-width:40px!important;height:56px!important;min-height:56px!important}
+ body.in-game .opponent-seat .tapped-label{font-size:7px!important;padding:1px}
+ body.in-game .opponent-seat .card-strip{gap:4px;min-height:0;padding-bottom:2px}
+}

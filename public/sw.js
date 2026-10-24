@@ -1,4 +1,4 @@
-const CACHE='mesa-commander-v8-mesa-tactil-20261024';
+const CACHE='mesa-commander-v9-movil-20261024';
 const ROOT=new URL('./',self.location.href).href;
 const ASSETS=['./','./index.html','./icon.svg','./icon-192.png','./icon-512.png','./manifest.webmanifest','./peerjs.min.js','./cards/swamp.jpg','./cards/island.jpg','./cards/rat-colony.jpg','./cards/marrow-gnawer.jpg','./cards/persistent-petitioners.jpg','./cards/talrand.jpg','./cards/marrow-gnawer-art.jpg','./cards/talrand-art.jpg'].map(p=>new URL(p,ROOT).href);
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
