@@ -103,3 +103,21 @@ El Worker expone `/api/ice`, que genera credenciales temporales de Cloudflare Re
 3. Pega `proxy/worker-dashboard.js` en el editor del Worker y despliega.
 
 Sin esos secretos la app sigue funcionando con los servidores por defecto de PeerJS.
+
+## Motor de reglas (0.8)
+
+La mesa ahora lee el texto Oracle de cada carta y aplica sola sus habilidades. Lo que no reconoce queda marcado
+«A mano» en la carta y se resuelve como antes (mover, contadores, vidas…), sin bloquear la partida.
+
+- **Disparadas** (van a la pila en orden APNAP): entra al campo, muere, ataca, daño de combate a un jugador,
+  lanzar hechizos (Talrand, destreza), mantenimiento, paso final y comienzo del combate. Las opcionales («puedes») se pueden rechazar.
+- **Activadas** con costes de maná, {T}, sacrificar, descartar, pagar vida o quitar contadores; equipar; «solo como un conjuro».
+- **Estáticas y continuas**: señores (+N/+N, «tus Ratas tienen amenaza»), equipo y auras, fuerza variable (Pack Rat),
+  «entra girada», reducción de coste, tamaño máximo de mano, «hasta el final del turno».
+- **Elecciones de los jugadores**: descartar, sacrificar, buscar en la biblioteca, regresar del cementerio, adivinar/vigilar,
+  elegir tipo de criatura o color. Cada jugador ve solo sus opciones; los bots eligen solos.
+- **Reglas de Commander**: impuesto, zona de mando, 21 de daño de comandante, regla de leyendas, descarte hasta 7 en la limpieza,
+  miedo, sigilo, antimaleficio y velo, costes adicionales y turnos adicionales.
+
+`node tools/coverage.cjs <links de Archidekt>` mide qué cartas de un deck quedan automáticas y lista las líneas manuales.
+`node tools/fixture.cjs tools/fixtures/decks.json <links>` guarda decks y `node tools/sim.cjs` juega partidas completas entre bots con ellos para detectar errores del motor.

@@ -27,6 +27,10 @@ function chooseTarget(MC,s,me,step,options){
   const faces=options.filter(o=>!o.target.iid&&!mine(o)).sort((a,b)=>owner(a).life-owner(b).life);
   return faces[0]||kills[0]||null;
  }
+ if(step.type==='pump'){const sg=x=>typeof x==='number'?x:(x?.times||0);const good=sg(step.p)+sg(step.t)>=0;const list=options.filter(o=>good?mine(o):!mine(o)).sort((a,b)=>threat(MC,card(b),owner(b))-threat(MC,card(a),owner(a)));return list[0]||null;}
+ if(step.type==='untap')return options.find(mine)||null;
+ if(step.type==='tap')return options.find(o=>!mine(o))||null;
+ if(['discard','sacrifice','mill','exileGrave','handToTop','reveal'].includes(step.type)){const opp=options.filter(o=>!mine(o)).sort((a,b)=>owner(a).life-owner(b).life);return opp[0]||null;}
  if(['destroy','exile','bounce'].includes(step.type)){const theirs=options.filter(o=>!mine(o)).sort((a,b)=>threat(MC,card(b),owner(b))-threat(MC,card(a),owner(a)));return theirs[0]||null;}
  return null;
 }
@@ -60,6 +64,8 @@ function botTurn(MC,state,id){
  if(!me||!me.bot||s.activePlayerId!==id||s.pendingCombat||s.stack.length||s.winnerId)return {state:s,events,error:'El bot no puede actuar ahora.'};
  let seq=0;
  function act(type,payload={}){const r=MC.dispatch(s,{id:'bot-'+s.turn+'-'+s.revision+'-'+(++seq),type,actorId:id,payload});if(r.ok){s=r.state;events.push(...r.events);me=s.players.find(p=>p.id===id);}return r.ok;}
+ // Resuelve lo que el bot puso en la pila (hechizos y disparos). Se detiene ante objetos de otro jugador.
+ function drain(){for(let i=0;i<40&&s.stack.length&&!s.winnerId;i++){const top=s.stack.at(-1);if(top.controllerId!==id)return false;const t=planTargets(MC,s,me,top);if(!act('RESOLVE',t&&t.targets.length?{targets:t.targets}:{}))if(!act('RESOLVE',{manual:true}))return false;}return !s.stack.length;}
  if(!me.turnDrawn)act('DRAW',{count:1});
  // 1. Tierra: la que más colores útiles aporta.
  if(me.landsPlayed<1){const lands=me.hand.filter(MC.isLand).map(c=>({c,v:landScore(MC,me,c)})).sort((a,b)=>b.v-a.v);if(lands.length)act('CAST',{iid:lands[0].c.iid,from:'hand'});}
@@ -70,13 +76,12 @@ function botTurn(MC,state,id){
   for(const o of options){const plan=MC.autoPaymentPlan(s,id,o.c.iid,o.from);if(!plan.ok)continue;const v=castScore(MC,s,me,o.c,o.from);if(v===null)continue;if(!best||v>best.v)best={...o,plan,v};}
   if(!best)break;
   if(!act('CAST',{iid:best.c.iid,from:best.from,autoPay:true,autoPayRevision:s.revision,landIds:best.plan.landIds}))break;
-  const entry=s.stack.at(-1);const t=planTargets(MC,s,me,entry)||{targets:[]};
-  if(!act('RESOLVE',t.targets.length?{targets:t.targets}:{}))return {state:s,events};
+  if(!drain())return {state:s,events};
  }
  if(s.winnerId)return {state:s,events};
  // 3. Ataque.
- const plan=attackPlan(MC,s,me);
- if(plan)act('COMBAT',{attackers:plan.attackers,targetPlayerId:plan.targetId,autoEndTurn:true});else act('NEXT_TURN');
+ const plan=me.attackedTurn===s.turn?null:attackPlan(MC,s,me);
+ if(plan){act('COMBAT',{attackers:plan.attackers,targetPlayerId:plan.targetId,autoEndTurn:true});drain();}else{act('NEXT_TURN');drain();}
  return {state:s,events};
 }
 function attackPlan(MC,s,me){

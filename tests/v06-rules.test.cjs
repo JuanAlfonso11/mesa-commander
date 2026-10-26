@@ -63,9 +63,9 @@ test('counterspell removes the spell below it; tokens, ramp and wipes',()=>{
  s=ok(s,'CAST',{iid:'wrath'});s=ok(s,'RESOLVE');assert.equal(s.players[0].battlefield.filter(c=>c.token).length,0);assert.deepEqual(s.players[1].battlefield.map(c=>c.iid),['b2']);
 });
 
-test('ETB draw resolves when the creature resolves',()=>{
+test('ETB draw triggers onto the stack when the creature enters',()=>{
  let s=game();s.players[0].library=[bear('x1'),bear('x2')];s.players[0].hand=[card('ev','Elvish Visionary','Creature — Elf','When Elvish Visionary enters, draw a card.',{power:'1',toughness:'1'})];
- s=ok(s,'CAST',{iid:'ev'});assert.equal(s.stack[0].effectStatus,'supported');s=ok(s,'RESOLVE');assert.equal(s.players[0].hand.length,1);assert(s.players[0].battlefield.some(c=>c.iid==='ev'));
+ s=ok(s,'CAST',{iid:'ev'});assert.equal(s.stack[0].effectStatus,'supported');s=ok(s,'RESOLVE');assert.equal(s.stack.length,1,'la habilidad de entrar va a la pila');assert.equal(s.stack[0].ability,true);s=ok(s,'RESOLVE');assert.equal(s.players[0].hand.length,1);assert(s.players[0].battlefield.some(c=>c.iid==='ev'));
 });
 
 test('combat: blockers trade, first strike wins, trample and lifelink, deathtouch',()=>{

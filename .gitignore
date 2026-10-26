@@ -5,3 +5,5 @@ node_modules/
 dist/
 .wrangler/
 proxy/.wrangler/
+tools/fixtures/
+tools/cov*.txt
