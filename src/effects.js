@@ -11,7 +11,7 @@ const N='(a|an|one|two|three|four|five|six|seven|eight|nine|ten|\\d+|x)';
 // «X» es la cantidad elegida al lanzar o activar.
 const num=v=>v==='x'?{of:'x'}:NUM[v]??Number(v);
 const COLOR_WORD={white:'W',blue:'U',black:'B',red:'R',green:'G',colorless:'C'};
-const KEYWORD={'forestwalk':'Forestwalk','islandwalk':'Islandwalk','swampwalk':'Swampwalk','mountainwalk':'Mountainwalk','plainswalk':'Plainswalk','infect':'Infect','wither':'Wither','partner':'Partner','flying':'Flying','reach':'Reach','vigilance':'Vigilance','haste':'Haste','trample':'Trample','lifelink':'Lifelink','deathtouch':'Deathtouch','menace':'Menace','first strike':'First strike','double strike':'Double strike','indestructible':'Indestructible','defender':'Defender','fear':'Fear','skulk':'Skulk','flash':'Flash','hexproof':'Hexproof','shroud':'Shroud','changeling':'Changeling','prowess':'Prowess','intimidate':'Intimidate'};
+const KEYWORD={'devoid':'Devoid','split second':'Split second','persist':'Persist','undying':'Undying','exalted':'Exalted','storm':'Storm','affinity for artifacts':'Affinity for artifacts','forestwalk':'Forestwalk','islandwalk':'Islandwalk','swampwalk':'Swampwalk','mountainwalk':'Mountainwalk','plainswalk':'Plainswalk','infect':'Infect','wither':'Wither','partner':'Partner','flying':'Flying','reach':'Reach','vigilance':'Vigilance','haste':'Haste','trample':'Trample','lifelink':'Lifelink','deathtouch':'Deathtouch','menace':'Menace','first strike':'First strike','double strike':'Double strike','indestructible':'Indestructible','defender':'Defender','fear':'Fear','skulk':'Skulk','flash':'Flash','hexproof':'Hexproof','shroud':'Shroud','changeling':'Changeling','prowess':'Prowess','intimidate':'Intimidate'};
 // Palabras clave que el motor aplica de verdad (combate, objetivos, momento de lanzar, tipos, disparos).
 const KEYWORD_IMPL=new Set(Object.values(KEYWORD));
 // Objetivos de permanentes que el motor sabe validar.
@@ -93,7 +93,7 @@ function parseObj(raw){
 const hasType=(c,t)=>new RegExp('\\b'+t+'\\b').test(c?.type_line||'');
 const keywordsOf=c=>c?.keywords||[];
 function hasSubtype(c,t){if(hasType(c,t))return true;return hasType(c,'Creature')&&keywordsOf(c).includes('Changeling')&&!['Equipment','Aura','Swamp','Island','Forest','Mountain','Plains'].includes(t);}
-function colorsOf(c){if(Array.isArray(c?.colors))return c.colors;return COLORS.filter(x=>x!=='C'&&new RegExp('\\{[^}]*'+x+'[^}]*\\}').test(c?.mana_cost||''));}
+function colorsOf(c){if(Array.isArray(c?.colors))return c.colors;if(/^Devoid\b/m.test(c?.oracle_text||''))return [];return COLORS.filter(x=>x!=='C'&&new RegExp('\\{[^}]*'+x+'[^}]*\\}').test(c?.mana_cost||''));}
 // ¿La carta cumple el filtro? ctx: {controllerId, srcIid, srcControllerId, chosenType}
 function matchCard(c,spec,ctx={}){
  if(!c||!spec)return false;
@@ -213,7 +213,7 @@ function parseSentence(raw){
  if((m=s.match(/^put (?:a|one|an) ([+-]1\/[+-]1) counter on each (.+?)$/))){const spec=parseObj(m[2].replace(/ you control$/,' you control'));if(spec)return [{type:'counters',count:1,target:'each',spec:{...spec,controller:spec.controller||'any'},kind:m[1]}];}
  if((m=s.match(new RegExp('^put '+N+' \\+1/\\+1 counters? on each (.+?)$')))){const spec=parseObj(m[2]);if(spec)return [{type:'counters',count:num(m[1]),target:'each',spec:{...spec,controller:spec.controller||'any'}}];}
  if((m=s.match(/^(?:you )?create (?:a|an|one) (\d+)\/(\d+) ([a-z ,]+?) creature tokens?(?: with ([a-z ,]+))? for each (.+)$/))){const a=parseAmount(m[5]);const t2=a&&tokenStep(1,+m[1],+m[2],m[3],m[4]);if(t2)return [{...t2,count:a}];}
- if((m=s.match(/^that player loses (\d+) life$/)))return [{type:'loseLife',amount:+m[1],who:'event-player'}];
+ if((m=s.match(/^(?:they|that player) loses? (\d+) life$/)))return [{type:'loseLife',amount:+m[1],who:'event-player'}];
  if((m=s.match(/^reveal the top (\w+) cards of your library$/)))return [{type:'revealTop',n:num(m[1])}];
  if((m=s.match(/^put all (.+?) cards revealed this way into your hand and the rest (?:on the bottom of your library|into your graveyard) in (?:any|a random) order$/))){const spec=parseObj(m[1]);if(spec)return [{type:'revealTake',spec}];}
  if((m=s.match(/^(?:you may reveal|put) (?:a|an|up to one) (.+?) card from among them (?:and put it )?into your hand$/))){const spec=parseObj(m[1]);if(spec)return [{type:'lookReveal',spec}];}
@@ -261,6 +261,7 @@ function parseSentence(raw){
  if((m=s.match(/^return target (.+?) to its owner's hand$/))){if(PERMANENT_TARGET[m[1]])return [{type:'bounce',target:m[1]}];const spec=parseObj(m[1]);if(spec)return [{type:'bounce',target:m[1],spec:specFromObj(spec)}];}
  if((m=s.match(/^return all (.+?) to their owners' hands$/))){const spec=parseObj(m[1]);if(spec)return [{type:'wipe',what:'filter',spec,bounce:true}];}
  if((m=s.match(/^counter target (spell|noncreature spell|creature spell|instant or sorcery spell|instant spell|sorcery spell|artifact, creature, or planeswalker spell|enchantment, instant, or sorcery spell|activated or triggered ability|activated ability, triggered ability, or legendary spell)$/)))return [{type:'counter',spell:m[1]}];
+ if((m=s.match(/^counter target (spell|noncreature spell|creature spell|instant or sorcery spell|instant spell|sorcery spell|activated or triggered ability) unless its controller pays ((?:\{[^}]+\})+)$/)))return [{type:'counter',spell:m[1],unless:m[2].toUpperCase()}];
  if(/^if that spell is countered this way, exile it instead of putting it into its owner's graveyard$/.test(s))return [];
  // Fichas
  if((m=s.match(new RegExp('^(?:you )?create '+N+' (\\d+)/(\\d+) ([a-z ,]+?) creature tokens?(?: with ([a-z ,]+))?$')))){const t=tokenStep(num(m[1]),+m[2],+m[3],m[4],m[5]);return t?[t]:null;}
@@ -320,6 +321,21 @@ function parseSentence(raw){
  if((m=s.match(/^tap all (.+)$/))){const spec=parseObj(m[1]);if(spec)return [{type:'tap',target:'each',spec:{...spec,controller:spec.controller||'any'}}];}
  // Turnos y otros
  if(/^take an extra turn after this one$/.test(s))return [{type:'extraTurn'}];
+ // ——— 0.8.4: plantillas frecuentes según Scryfall ———
+ if((m=s.match(/^~ deals (\d+) damage to that player$/)))return [{type:'damage',amount:+m[1],target:'event-player'}];
+ if((m=s.match(/^then if you control (\w+) or more lands, untap that land$/)))return [{type:'untapIfLands',n:num(m[1])}];
+ if(/^exile ~$/.test(s))return [{type:'selfZone',to:'exile'}];
+ if(/^shuffle ~ into its owner's library$/.test(s))return [{type:'selfZone',to:'library'}];
+ if(/^(?:then )?shuffle$|^(?:then )?that player shuffles$/.test(s))return [{type:'shuffle'}];
+ if(/^~ can't be countered$/.test(s))return [];
+ if(/^prevent all combat damage that would be dealt this turn$/.test(s))return [{type:'fog'}];
+ if(/^you become the monarch$/.test(s))return [{type:'monarch'}];
+ if((m=s.match(/^you may play (an|one|two) additional lands? this turn$/)))return [{type:'extraLand',n:m[1]==='two'?2:1}];
+ if((m=s.match(new RegExp('^mill '+N+' cards?$'))))return [{type:'mill',count:num(m[1]),who:'you'}];
+ if((m=s.match(/^it deals (.+)$/))&&!/^it deals damage equal/.test(s))return parseSentence('~ deals '+m[1]);
+ if((m=s.match(new RegExp('^defending player sacrifices '+N+' (.+?)s?$')))){const spec=m[2]==='permanent'?{types:['*'],subtypes:[]}:parseObj(m[2]);if(spec)return [{type:'sacrifice',who:'event-player',count:num(m[1]),spec}];}
+ {const own="creature you control",theirs="(creature you don't control|creature an opponent controls|creature or planeswalker you don't control|creature or planeswalker an opponent controls|creature)";
+  if((m=s.match(new RegExp('^target ('+own+') fights (?:target |up to one target )?'+theirs+'$')))||(m=s.match(new RegExp('^target ('+own+') deals damage equal to its power to (?:target |up to one target )?'+theirs+'$')))){const a=parseObj(m[1]),b=parseObj(m[2].replace(' or planeswalker',''));if(a&&b)return [{type:'pick',target:'chosen',spec:specFromObj(a),phrase:m[1]},{type:'fight',target:'chosen',spec:specFromObj(b),phrase:m[2],mutual:/ fights /.test(s)}];}}
  if((m=s.match(/^(?:target creature|~) can't block this turn$/)))return [{type:'note',text:'No puede bloquear este turno.'}];
  return null;
 }
@@ -337,6 +353,7 @@ function parseClause(s){
 }
 function parseLines(text){const out=[];for(const s of sentences(text)){const r=parseClause(s);if(!r)return null;out.push(...r);}
  for(let i=0;i<out.length;i++){const a=out[i],b=out[i+1];
+  if((a.type==='search'||a.type==='ramp')&&b?.type==='untapIfLands'){out.splice(i,2,{...a,tapped:{unlessLands:b.n}});continue;}
   if(a.type==='lookTop'&&b?.type==='lookBack'){out.splice(i,2,{type:'scry',count:a.n,order:true});continue;}
   if(a.type==='lookTop'&&b?.type==='lookTake'){out.splice(i,2,{type:'dig',look:a.n,take:b.take});continue;}
   if(a.type==='lookTop'&&b?.type==='lookReveal'){const rest=out[i+2]?.type==='lookRest'?1:0;out.splice(i,2+rest,{type:'dig',look:a.n,take:1,spec:b.spec,upTo:true});continue;}
@@ -411,6 +428,9 @@ function parseTriggerHead(h){
  if((m=h.match(/^whenever you cast or copy (?:a|an) (.+?) spell$/))){const o=parseObj(m[1]);return o&&{on:'cast',spell:o};}
  if((m=h.match(/^whenever you cast (?:a|an|another) (.+?) spell$/))){if(m[1]==='spell'||!m[1])return {on:'cast',spell:null};const o=parseObj(m[1]);return o&&{on:'cast',spell:o};}
  if(/^whenever you gain life$/.test(h))return {on:'lifegain',mine:true};
+ if(/^whenever you draw a card$/.test(h))return {on:'draw',mine:true};
+ if(/^whenever an opponent draws a card$/.test(h))return {on:'draw',opp:true};
+ if(/^whenever a player draws a card$/.test(h))return {on:'draw'};
  if((m=h.match(/^(?:when|whenever) (.+?) leaves the battlefield$/))){const s=subj(m[1]);return s&&{on:'leaves',subject:s};}
  if((m=h.match(/^whenever (?:a|an|another) (.+?) is put into (?:a|your) graveyard from the battlefield$/))){const o=parseObj(m[1]);return o&&{on:'to-graveyard',subject:o};}
  if((m=h.match(/^whenever one or more (.+?) (?:you control )?enter$/))){const o=parseObj(m[1]+(/you control/.test(h)?' you control':''));return o&&{on:'enters',subject:o,batch:true};}
@@ -477,6 +497,13 @@ function staticAbility(line){
  if(/^untap all permanents you control during each other player's untap step$/.test(l))return {kind:'static',type:'untapOthers',all:true};
  if((m=l.match(/^if ~ would be put into a graveyard from anywhere, (?:reveal ~ and )?shuffle it into its owner's library instead$/)))return {kind:'static',type:'shuffleInstead'};
  if((m=l.match(/^each opponent's maximum hand size is reduced by (\w+)$/)))return {kind:'static',type:'handSize',opp:-num(m[1])};
+ if((m=l.match(/^you may play (an|two) additional lands? on each of your turns$/)))return {kind:'static',type:'extraLand',n:m[1]==='two'?2:1};
+ if(/^~ doesn't untap during your untap step$/.test(l))return {kind:'static',type:'noUntap'};
+ if(/^skip your draw step$/.test(l))return {kind:'static',type:'skipDraw'};
+ if(/^you may play lands from your graveyard$/.test(l))return {kind:'static',type:'landsFromGrave'};
+ if(/^if you would gain life, you gain twice that much life instead$/.test(l))return {kind:'static',type:'lifeGain',mult:2};
+ if((m=l.match(/^if you would gain life, you gain that much life plus (\d+) instead$/)))return {kind:'static',type:'lifeGain',plus:+m[1]};
+ if(/^if (?:one or more|an effect would create one or more) tokens would be created under your control, twice that many of those tokens are created instead$|^if an effect would create one or more tokens under your control, it creates twice that many of those tokens instead$/.test(l))return {kind:'static',type:'tokenDouble'};
  if(/^~ can't block$/.test(l))return {kind:'static',type:'anthem',self:true,p:0,t:0,kws:["Can't block"]};
  if(/^~ can't be blocked$/.test(l))return {kind:'static',type:'anthem',self:true,p:0,t:0,kws:['Unblockable']};
  if(/^~ can be your commander$|^a deck can have any number of cards named ~$|^a deck can have up to \w+ cards named ~$/.test(l))return {kind:'static',type:'none'};
@@ -500,10 +527,10 @@ function abilities(card){
   if(!bare)continue;
   // Palabras clave sueltas: «Flying, haste».
   {const parts=bare.split(/,\s*/).map(k=>k.trim().toLowerCase());const kw=[],extra=[];let okLine=parts.length>0;
-   for(const k of parts){let mk;if(KEYWORD[k])kw.push(KEYWORD[k]);else if((mk=k.match(/^toxic (\d+)$/)))extra.push({kind:'toxic',n:+mk[1]});else if((mk=k.match(/^bushido (\d+)$/)))extra.push({kind:'bushido',n:+mk[1]});else if((mk=k.match(/^protection from (white|blue|black|red|green)(?: and from (white|blue|black|red|green))?$/)))extra.push({kind:'protection',colors:[COLOR_WORD[mk[1]],...(mk[2]?[COLOR_WORD[mk[2]]]:[])]});else{okLine=false;break;}}
+   for(const k of parts){let mk;if(KEYWORD[k])kw.push(KEYWORD[k]);else if((mk=k.match(/^toxic (\d+)$/)))extra.push({kind:'toxic',n:+mk[1]});else if((mk=k.match(/^bushido (\d+)$/)))extra.push({kind:'bushido',n:+mk[1]});else if((mk=k.match(/^annihilator (\d+)$/)))extra.push({kind:'trigger',on:'attacks',subject:{self:true},steps:[{type:'sacrifice',who:'event-player',count:+mk[1],spec:{types:['*'],subtypes:[]}}],optional:false,text:'Annihilator '+mk[1]});else if((mk=k.match(/^crew (\d+)$/)))extra.push({kind:'activated',cost:{mana:'',tap:false,crew:+mk[1]},steps:[{type:'crew'}],text:'Crew '+mk[1]});else if((mk=k.match(/^protection from (white|blue|black|red|green)(?: and from (white|blue|black|red|green))?$/)))extra.push({kind:'protection',colors:[COLOR_WORD[mk[1]],...(mk[2]?[COLOR_WORD[mk[2]]]:[])]});else{okLine=false;break;}}
    if(okLine){if(kw.length)list.push({kind:'keywords',list:kw});list.push(...extra);continue;}}
   let m;
-  if((m=bare.match(/^equip \{(\d+)\}$/i))){list.push({kind:'activated',cost:{mana:'{'+m[1]+'}',tap:false},steps:[{type:'attach'}],sorcery:true,text:line,equip:true});continue;}
+  if((m=bare.match(/^equip ((?:\{[^}]+\})+)$/i))){list.push({kind:'activated',cost:{mana:m[1].toUpperCase(),tap:false},steps:[{type:'attach'}],sorcery:true,text:line,equip:true});continue;}
   if((m=bare.match(/^bushido (\d+)$/i))){list.push({kind:'bushido',n:+m[1]});continue;}
   if(SKIP_LINE(bare))continue;
   if(/^•/.test(bare)){if(!consumed.has(idx))manual.push(line);continue;}
@@ -511,6 +538,7 @@ function abilities(card){
   if(/^\{T\}: Add one mana of the chosen color$/i.test(bare))continue;
   if(ADDITIONAL.test(bare)&&additionalCost(card)&&!additionalCost(card).unknown)continue;
   if(isSpellType(card))continue;
+  if(/^at the beginning of each player's draw step, that player draws an additional card$/i.test(bare)){list.push({kind:'static',type:'extraDraw',text:line});continue;}
   // Disparadas: «Cuando/Cada vez que/Al comienzo de…, efecto».
   if((m=line.match(/^((?:When|Whenever|At)\b[^,]*?(?:, (?!if )[^,]*? or [^,]*?)?), (.+)$/i))&&!/^at the beginning of the next/i.test(line)){
    const head=parseTriggerHead(m[1].replace(/~ or another/i,'~ or another'));
@@ -555,6 +583,7 @@ function targetKind(step){
  if(step.type==='loseLife'||step.type==='draw'||step.type==='discard'||step.type==='sacrifice'||step.type==='mill'||step.type==='exileGrave'||step.type==='reveal'||step.type==='handToTop'||step.type==='poison')return step.who==='target-player'?'player':step.who==='target-opponent'?'opponent':null;
  if(['destroy','exile','bounce'].includes(step.type))return 'permanent';
  if(step.type==='counters'&&step.target==='creature')return 'creature';
+ if((step.type==='pick'||step.type==='fight')&&step.target==='chosen')return 'permanent';
  if((step.type==='pump'||step.type==='untap'||step.type==='tap'||step.type==='regenerate'||step.type==='copyToken')&&step.target==='chosen')return 'permanent';
  if(step.type==='counter'||step.type==='copySpell')return 'spell';
  return null;
@@ -617,11 +646,13 @@ function manaAbility(card,player){
  return out;
 }
 // Líneas del texto que la mesa NO aplica sola (quedan para resolver a mano). [] = carta automática.
+// Frases que el lector no entiende (para saber exactamente qué falta).
+const badSentences=text=>{const bad=text.split(/\n+/).filter(l=>!SKIP_LINE(l)&&!MODAL.test(l.trim())).flatMap(l=>sentences(l.replace(ABILITY_WORD,'').replace(/^•\s*/,'')).filter(x=>!parseClause(x)));return bad.length?[...new Set(bad)]:text.split(/\n+/).filter(l=>!SKIP_LINE(l));};
 function uncovered(card){
  if(!card)return [];
  const text=normalize(card);if(!text)return /\bLand\b/.test(card.type_line||'')&&!manaAbility(card)?['Tierra sin habilidad de maná reconocida']:[];
  const add=additionalCost(card);const extra=add?.unknown?[add.text]:[];
- if(isSpellType(card)){const st=spellSteps(card);return st?[...extra,...st.filter(x=>x.type==='mode').flatMap(x=>x.modes.filter(m=>m.manual).map(m=>'• '+m.label))]:text.split(/\n+/).filter(l=>!SKIP_LINE(l));}
+ if(isSpellType(card)){const st=spellSteps(card);return st?[...extra,...st.filter(x=>x.type==='mode').flatMap(x=>x.modes.filter(m=>m.manual).map(m=>'• '+m.label))]:badSentences(text);}
  return [...extra,...abilities(card).manual];
 }
 // ——— Etiquetas en español para la interfaz ———

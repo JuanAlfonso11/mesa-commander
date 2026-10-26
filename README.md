@@ -124,6 +124,12 @@ La mesa ahora lee el texto Oracle de cada carta y aplica sola sus habilidades. L
 - **Más mecánicas**: planeswalkers (lealtad, una habilidad por turno, daño), veneno, infectar, toxic, proliferar, regenerar,
   monstruosidad, bushido, caminatas, protección, eminencia, disparos «uno o más», efectos retrasados, copias de hechizos y de fichas.
   Las cartas de dos caras usan su cara frontal.
+- **0.8.4 (revisado contra todo Scryfall)**: tripular vehículos, monarca (👑, roba en su paso final y se roba con daño de combate),
+  hechizos que se exilian o barajan solos, tierras adicionales (Explore, Exploration), tierras desde el cementerio, Niebla,
+  pelear y morder, «contrarresta a menos que pague», persistir, inmortal, enaltecido, aniquilador, tormenta, segundo dividido,
+  afinidad por artefactos, devoid, «no se endereza», saltar el robo, robo extra para todos, doblar vida y fichas,
+  disparos al robar (Sheoldred, Psychosis Crawler) y fetchlands que se enderezan con 4 tierras.
 
+`node tools/scryfall-coverage.cjs` descarga las cartas de Scryfall y mide qué porcentaje de las legales en Commander aplica el motor solo (y las frases que faltan, ordenadas por popularidad en EDHREC).
 `node tools/coverage.cjs <links de Archidekt>` mide qué cartas de un deck quedan automáticas y lista las líneas manuales.
 `node tools/fixture.cjs tools/fixtures/decks.json <links>` guarda decks y `node tools/sim.cjs` juega partidas completas entre bots con ellos para detectar errores del motor.

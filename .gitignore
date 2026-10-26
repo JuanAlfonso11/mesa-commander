@@ -7,3 +7,5 @@ dist/
 proxy/.wrangler/
 tools/fixtures/
 tools/cov*.txt
+tools/.cache/
+tools/coverage-scryfall.json
