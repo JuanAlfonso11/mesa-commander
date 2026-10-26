@@ -111,10 +111,10 @@ function attackPlan(MC,s,me){
  return best;
 }
 // Bloqueos sugeridos para el defensor del combate pendiente (bot o ayuda para humanos).
-function suggestBlocks(MC,s){
- const combat=s.pendingCombat;if(!combat)return [];
- const att=s.players.find(p=>p.id===combat.attackerId),def=s.players.find(p=>p.id===combat.targetPlayerId);
- const attackers=combat.attackers.map(id=>att.battlefield.find(c=>c.iid===id)).filter(Boolean).sort((a,b)=>MC.power(b,att)-MC.power(a,att));
+function suggestBlocks(MC,s,defId){
+ const combat=s.pendingCombat;if(!combat)return [];defId=defId||combat.targetPlayerId;
+ const att=s.players.find(p=>p.id===combat.attackerId),def=s.players.find(p=>p.id===defId);
+ const attackers=combat.attackers.filter(id=>((combat.targets&&combat.targets[id])||combat.targetPlayerId)===defId).map(id=>att.battlefield.find(c=>c.iid===id)).filter(Boolean).sort((a,b)=>MC.power(b,att)-MC.power(a,att));
  const free=def.battlefield.filter(c=>MC.isCreature(c)&&!c.tapped);const used=new Set(),blocks=[];
  const dmgOf=a=>MC.power(a,att)*(kw(a,'Double strike')?2:1);
  let incoming=attackers.reduce((n,a)=>n+dmgOf(a),0);

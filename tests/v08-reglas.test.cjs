@@ -290,3 +290,19 @@ test('caras dobles, modales parciales, eminencia, «uno o más», ganar vida y c
  assert(s.players[0].library.some(c=>c.iid==='land1')&&s.players[0].library.some(c=>c.iid==='l2'),'el resto vuelve al fondo');
  const tl=card('tl','Bountiful Promenade','Land','Bountiful Promenade enters tapped unless you have two or more opponents.\n{T}: Add {G} or {W}.');s.players[0].hand.push(tl);s.players[0].landsPlayed=0;s=drain(s);s=ok(s,'CAST',{iid:'tl'});assert(!s.players[0].battlefield.find(c=>c.iid==='tl').tapped);
 });
+
+test('atacar a varios rivales: cada defensor bloquea solo lo que le ataca y el daño va a quien corresponde',()=>{
+ let s=game(3,['c']);const a=s.players[0];
+ a.battlefield=[bear('x1',{isCommander:true}),bear('x2'),crit('x3','Ninja','Human Ninja','Whenever Ninja deals combat damage to a player, draw a card.',1,1)];a.library=[bear('l1')];
+ s.players[1].battlefield=[rat('rb')];s.players[2].battlefield=[rat('rc')];
+ assert.equal(act(s,'COMBAT',{assignments:[{attackerId:'x1',targetPlayerId:'a'}]}).ok,false,'no puedes atacarte');
+ s=ok(s,'COMBAT',{assignments:[{attackerId:'x1',targetPlayerId:'b'},{attackerId:'x2',targetPlayerId:'c'},{attackerId:'x3',targetPlayerId:'c'}]});
+ const c=s.pendingCombat;assert.deepEqual(c.targets,{x1:'b',x2:'c',x3:'c'});assert.equal(c.blocksDeclared,false,'B (humano) aún no declara');
+ assert(c.blocks.every(b=>['x2','x3'].includes(b.attackerId)),'el bot C solo bloquea lo que le ataca');
+ assert.equal(act(s,'DECLARE_BLOCKS',{blocks:[{attackerId:'x2',blockerId:'rb'}]},'b').ok,false,'B no puede bloquear a quien ataca a C');
+ s=ok(s,'DECLARE_BLOCKS',{blocks:[]},'b');assert.equal(s.pendingCombat.blocksDeclared,true);
+ s=ok(s,'RESOLVE_COMBAT',{confirm:true,blocks:[{attackerId:'x2',blockerId:'rc'}]});s=drain(s);
+ assert.equal(s.players[1].life,38);assert.equal(s.players[1].commanderDamage.a,2);
+ assert.equal(s.players[2].life,39);assert.equal(s.players[0].hand.length,1,'el Ninja robó al dañar a C');
+ assert(!s.players[2].battlefield.some(x=>x.iid==='rc'),'la rata de C murió bloqueando');
+});

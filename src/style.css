@@ -179,3 +179,6 @@
 .combat-choice small{opacity:.8}
 .attack-sum{flex-basis:100%;margin:0 0 4px}
 #toast{pointer-events:none}
+.attack-to{width:100%;min-height:36px;font-size:11px;padding:4px 6px}
+.defender-block{border-top:1px solid var(--line);padding-top:8px;margin-top:8px}
+.defender-block h4 small{font-weight:400;opacity:.8}
