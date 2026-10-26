@@ -1,6 +1,6 @@
 {
   "name": "mesa-commander",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "private": true,
   "description": "Mesa libre de Commander en español",
   "scripts": {
