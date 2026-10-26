@@ -160,3 +160,9 @@
 .ability-row select[multiple]{min-height:90px}
 .card-state{margin:10px 0 0;padding-left:18px;font-size:.85rem;opacity:.9}
 .stack-text{display:block;font-size:.72rem;opacity:.75;margin:2px 0}
+.cast-options{display:grid;gap:10px;margin-bottom:12px}
+.check-row{display:flex;align-items:center;gap:10px;min-height:44px;font-size:.92rem}
+.check-row input{width:22px;height:22px;flex:none}
+.prompt-cards.modes{grid-template-columns:1fr}
+.prompt-cards.modes .prompt-card{padding:12px 14px}
+.prompt-cards.modes .prompt-card strong{font-size:.95rem;font-weight:500}

@@ -118,6 +118,12 @@ La mesa ahora lee el texto Oracle de cada carta y aplica sola sus habilidades. L
   elegir tipo de criatura o color. Cada jugador ve solo sus opciones; los bots eligen solos.
 - **Reglas de Commander**: impuesto, zona de mando, 21 de daño de comandante, regla de leyendas, descarte hasta 7 en la limpieza,
   miedo, sigilo, antimaleficio y velo, costes adicionales y turnos adicionales.
+- **Formas de lanzar**: hechizos modales («Elige uno/dos»), X, costes alternativos (Force of Will, gratis con comandante),
+  estímulo, retroceso, sobrecarga, escarmiento, ciclo y ciclo de tipo, delve, convocar, cascada, ninjutsu y jugar desde el exilio.
+- **Maná**: tierras de dolor y de choque, Signets, criaturas de maná (con mareo), «por cada Elfo», altares, tesoros.
+- **Más mecánicas**: planeswalkers (lealtad, una habilidad por turno, daño), veneno, infectar, toxic, proliferar, regenerar,
+  monstruosidad, bushido, caminatas, protección, eminencia, disparos «uno o más», efectos retrasados, copias de hechizos y de fichas.
+  Las cartas de dos caras usan su cara frontal.
 
 `node tools/coverage.cjs <links de Archidekt>` mide qué cartas de un deck quedan automáticas y lista las líneas manuales.
 `node tools/fixture.cjs tools/fixtures/decks.json <links>` guarda decks y `node tools/sim.cjs` juega partidas completas entre bots con ellos para detectar errores del motor.

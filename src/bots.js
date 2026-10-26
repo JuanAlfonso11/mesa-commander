@@ -40,6 +40,7 @@ function planTargets(MC,s,me,entry){const plan=MC.effectPlan(s,entry);if(!plan.s
 function castScore(MC,s,me,c,from){
  const steps=MC.effectPlan(s,{card:c,controllerId:me.id,id:'preview'});
  const spell=/\b(Instant|Sorcery)\b/.test(c.type_line||'');
+ if(/\{X\}/.test(c.mana_cost||''))return null; // shortcut: los bots no eligen X; jugarían X=0
  if(spell&&!steps.supported)return null; // no lanza hechizos que no entiende
  if(spell&&steps.steps.some(x=>x.type==='counter'))return null; // guarda contrahechizos
  if(spell&&steps.steps.some(x=>x.type==='wipe')){const mineN=me.battlefield.filter(MC.isCreature).length,theirs=opponents(s,me.id).reduce((n,q)=>n+q.battlefield.filter(MC.isCreature).length,0);if(theirs<mineN+2)return null;}
@@ -91,7 +92,7 @@ function attackPlan(MC,s,me){
  for(const q of opps){
   const blockers=q.battlefield.filter(c=>MC.isCreature(c)&&!c.tapped);
   const chosen=ready.filter(a=>{
-   const able=blockers.filter(b=>MC.canBlock(a,b));if(!able.length)return true;
+   const able=blockers.filter(b=>MC.canBlock(a,b,q));if(!able.length)return true;
    if(kw(a,'Menace')&&able.length<2)return true;
    // Ataca si ningún bloqueador posible lo mata sin morir.
    return !able.some(b=>{const kills=MC.power(b,q)>=MC.toughness(a)||kw(b,'Deathtouch');const dies=MC.power(a,me)>=MC.toughness(b)||kw(a,'Deathtouch');return kills&&!dies&&!kw(a,'Indestructible');});
@@ -120,7 +121,7 @@ function suggestBlocks(MC,s){
  const cmdrLethal=attackers.some(a=>a.isCommander&&(def.commanderDamage[att.id]||0)+dmgOf(a)>=21);
  for(const a of attackers){
   if(kw(a,'Menace'))continue;
-  const able=free.filter(b=>!used.has(b.iid)&&MC.canBlock(a,b));if(!able.length)continue;
+  const able=free.filter(b=>!used.has(b.iid)&&MC.canBlock(a,b,def));if(!able.length)continue;
   const dies=b=>MC.power(a,att)>=MC.toughness(b)||kw(a,'Deathtouch');const kills=b=>MC.power(b,def)>=MC.toughness(a)||kw(b,'Deathtouch');
   let pick=able.find(b=>kills(b)&&!dies(b))||able.find(b=>!dies(b))||able.filter(b=>kills(b)&&threat(MC,b,def)<=threat(MC,a,att)).sort((x,y)=>threat(MC,x,def)-threat(MC,y,def))[0];
   const danger=incoming>=def.life||(cmdrLethal&&a.isCommander)||incoming>=def.life*0.5;

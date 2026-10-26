@@ -15,17 +15,17 @@ test('effects: parses common spells and keeps unknown text manual',()=>{
  assert.deepEqual(FX.spellSteps({name:'Lightning Bolt',type_line:'Instant',oracle_text:'Lightning Bolt deals 3 damage to any target.'}),[{type:'damage',amount:3,target:'any'}]);
  assert.deepEqual(FX.spellSteps({name:'Murder',type_line:'Instant',oracle_text:'Destroy target creature.'}),[{type:'destroy',target:'creature'}]);
  assert.equal(FX.spellSteps({name:'Chaos Warp',type_line:'Instant',oracle_text:'The owner of target permanent shuffles it into their library.'}),null);
- assert.equal(FX.spellSteps({name:'Divination',type_line:'Sorcery',oracle_text:'Draw two cards.\nKicker {2}'}),null);
+ assert.equal(FX.spellSteps({name:'Divination',type_line:'Sorcery',oracle_text:'Draw two cards.\nReplicate {2}'}),null);
  assert.deepEqual(FX.etbSteps({name:'Elvish Visionary',type_line:'Creature — Elf',oracle_text:'When Elvish Visionary enters, draw a card.'}),[{type:'draw',count:1,who:'you'}]);
  assert.equal(FX.etbSteps({name:'Maybe',type_line:'Creature',oracle_text:'When Maybe enters, you may draw a card.'}),null);
 });
 
-test('mana: dual lands ask for a color, mana rocks add their amount, painlands stay manual',()=>{
+test('mana: dual lands ask for a color, mana rocks add their amount, painlands hurt for colored mana',()=>{
  let s=game();const p=s.players[0];p.battlefield=[card('dual','Watery Grave','Land — Island Swamp','({T}: Add {U} or {B}.)\nAs Watery Grave enters, you may pay 2 life.'),card('ring','Sol Ring','Artifact','{T}: Add {C}{C}.'),card('pain','Adarkar Wastes','Land','{T}: Add {C}.\n{T}: Add {W} or {U}. Adarkar Wastes deals 1 damage to you.')];
  assert.match(act(s,'TAP',{iid:'dual',tapped:true}).error,/elige el color/);
  s=ok(s,'TAP',{iid:'dual',tapped:true,color:'B'});assert.equal(s.players[0].mana.B,1);
  s=ok(s,'TAP',{iid:'ring',tapped:true});assert.equal(s.players[0].mana.C,2);
- s=ok(s,'TAP',{iid:'pain',tapped:true});assert.deepEqual(s.players[0].mana,mana({B:1,C:2}));
+ assert.match(act(s,'TAP',{iid:'pain',tapped:true}).error,/elige el color/);s=ok(s,'TAP',{iid:'pain',tapped:true,color:'W'});assert.deepEqual(s.players[0].mana,mana({B:1,C:2,W:1}));assert.equal(s.players[0].life,39,'la tierra de dolor hace 1 de daño');
 });
 
 test('autopay: command tower follows commander identity and sol ring covers generic',()=>{

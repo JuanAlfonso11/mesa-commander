@@ -126,3 +126,167 @@ test('Tesoros: al girarse dan maná y se sacrifican; el pago automático no los 
  assert.equal(MC.manaSource(t[0],s.players[0]).sacrifice,true);
  s=ok(s,'TAP',{iid:t[0].iid,tapped:true,color:'R'});assert.equal(s.players[0].mana.R,1);assert.equal(s.players[0].battlefield.filter(c=>c.name==='Treasure').length,1);
 });
+
+test('hechizos modales: Kolaghan\'s Command elige dos modos y cada uno pide su objetivo',()=>{
+ let s=game();const a=s.players[0];s.players[1].hand=[bear('h1')];s.players[1].battlefield=[card('art','Sol Ring','Artifact','{T}: Add {C}{C}.')];
+ a.hand=[card('kc',"Kolaghan's Command",'Instant',"Choose two —\n• Return target creature card from your graveyard to your hand.\n• Target player discards a card.\n• Destroy target artifact.\n• Kolaghan's Command deals 2 damage to any target.")];
+ s=ok(s,'CAST',{iid:'kc'});s=ok(s,'RESOLVE');const pr=s.prompts[0];assert.equal(pr.kind,'mode');assert.equal(pr.min,2);
+ s=ok(s,'CHOOSE',{promptId:pr.id,picks:['mode-1','mode-2']});assert.equal(s.stack.length,2);assert.match(s.stack.at(-1).card.oracle_text,/discards/);
+ s=ok(s,'RESOLVE',{targets:[{playerId:'b'}]});assert.equal(s.players[1].hand.length,0,'una sola carta: descarta sin preguntar');
+ s=ok(s,'RESOLVE',{targets:[{playerId:'b',iid:'art'}]});assert.equal(s.players[1].battlefield.length,0);
+});
+
+test('X: Exsanguinate drena X y Crypt Rats activa con X',()=>{
+ let s=game(3);const a=s.players[0];a.battlefield=[...['s1','s2','s3','s4','s5'].map(i=>card(i,'Swamp','Basic Land — Swamp')),crit('cr','Crypt Rats','Rat','{X}: Crypt Rats deals X damage to each creature and each player. Spend only black mana on X.',1,1)];
+ a.hand=[card('ex','Exsanguinate','Sorcery','Each opponent loses X life. You gain life equal to the life lost this way.',{mana_cost:'{X}{B}{B}'})];
+ const plan=MC.autoPaymentPlan(s,'a','ex','hand',{cast:{x:2}});assert(plan.ok,plan.reason);assert.equal(plan.landIds.length,4);
+ s=ok(s,'CAST',{iid:'ex',autoPay:true,autoPayRevision:s.revision,landIds:plan.landIds,x:2});s=ok(s,'RESOLVE');assert.equal(s.players[1].life,38);assert.equal(s.players[2].life,38);assert.equal(s.players[0].life,44);
+ s=ok(s,'ACTIVATE',{iid:'cr',index:0,x:1});s=ok(s,'RESOLVE');assert.equal(s.players[1].life,37);assert(!s.players[0].battlefield.some(c=>c.iid==='cr'),'Crypt Rats 1/1 muere');
+});
+
+test('costes alternativos: Force of Will exilia una carta azul y paga 1 vida; gratis con comandante',()=>{
+ let s=game();s.activePlayerId='b';s.players[1].hand=[card('sp','Lightning Bolt','Instant','Lightning Bolt deals 3 damage to any target.',{mana_cost:'{R}'})];s.players[1].mana=mana({R:1});
+ s=ok(s,'CAST',{iid:'sp',payMana:true},'b');
+ const a=s.players[0];a.hand=[card('fow','Force of Will','Instant',"You may pay 1 life and exile a blue card from your hand rather than pay this spell's mana cost.\nCounter target spell.",{mana_cost:'{3}{U}{U}',colors:['U']}),card('blue','Brainstorm','Instant','Draw three cards, then put two cards from your hand on top of your library in any order.',{colors:['U']}),card('red','Shock','Instant','',{colors:['R']}),card('fg','Fierce Guardianship','Instant',"If you control a commander, you may cast this spell without paying its mana cost.\nCounter target noncreature spell.",{mana_cost:'{2}{U}'})];
+ assert.match(act(s,'CAST',{iid:'fow',alt:0,exile:['red']}).error,/no cumple/);
+ s=ok(s,'CAST',{iid:'fow',alt:0,exile:['blue']});assert.equal(s.players[0].life,39);assert.equal(s.players[0].exile[0].iid,'blue');
+ s=ok(s,'RESOLVE',{targets:[{spellId:s.stack[0].id}]},'a');assert.equal(s.stack.length,0);assert.equal(s.players[1].graveyard[0].iid,'sp');
+ assert.match(act(s,'CAST',{iid:'fg',alt:0}).error,/comandante/);
+});
+
+test('sobrecarga, retroceso, estímulo, escarmiento y ciclo',()=>{
+ let s=game();const a=s.players[0];a.library=[bear('l1'),bear('l2'),bear('l3')];a.mana=mana({U:10,C:10});
+ s.players[1].battlefield=[bear('b1'),bear('b2'),card('sw','Swamp','Basic Land — Swamp')];
+ a.hand=[card('rift','Cyclonic Rift','Instant',"Return target nonland permanent you don't control to its owner's hand.\nOverload {6}{U}",{mana_cost:'{1}{U}'}),card('tide','Rat Tide','Instant','Buyback {4}\nCreate a 1/1 black Rat creature token.',{mana_cost:'{B}'}),card('roil','Into the Roil','Instant',"Kicker {1}{U}\nReturn target nonland permanent to its owner's hand. If this spell was kicked, draw a card.",{mana_cost:'{1}{U}'}),card('cyc','Cycler','Creature — Beast','Cycling {2}',{power:'5',toughness:'5'})];
+ s=ok(s,'CAST',{iid:'rift',payMana:true,overload:true});s=ok(s,'RESOLVE');assert.deepEqual(s.players[1].battlefield.map(c=>c.iid),['sw']);assert.equal(s.players[0].mana.U,9);
+ s.players[0].mana=mana({B:5});s=ok(s,'CAST',{iid:'tide',payMana:true,buyback:true});s=ok(s,'RESOLVE');assert(s.players[0].hand.some(c=>c.iid==='tide'),'retroceso: vuelve a la mano');
+ s.players[0].battlefield.push(bear('mine'));s.players[0].mana=mana({U:3,C:2});s=ok(s,'CAST',{iid:'roil',payMana:true,kicker:true});const h=s.players[0].hand.length;s=ok(s,'RESOLVE',{targets:[{playerId:'a',iid:'mine'}]});assert.equal(s.players[0].hand.length,h+2,'vuelve el oso y roba por el estímulo');
+ s.players[0].graveyard.push(card('tt','Think Twice','Instant','Draw a card.\nFlashback {2}{U}',{mana_cost:'{1}{U}'}));s.players[0].mana=mana({U:1,C:2});
+ s=ok(s,'CAST',{iid:'tt',from:'graveyard',payMana:true});s=ok(s,'RESOLVE');assert(s.players[0].exile.some(c=>c.iid==='tt'),'escarmiento: se exilia');
+ s.players[0].mana=mana({C:2});const before=s.players[0].hand.length;s=ok(s,'CYCLE',{iid:'cyc'});assert.equal(s.players[0].hand.length,before);assert(s.players[0].graveyard.some(c=>c.iid==='cyc'));
+});
+
+test('ninjutsu, regeneración, monstruosidad y bushido',()=>{
+ let s=game();const a=s.players[0];a.mana=mana({B:10,C:10});
+ a.battlefield=[rat('att'),crit('kuro',"Kuro's Taken",'Rat Samurai',"Bushido 1\n{1}{B}: Regenerate Kuro's Taken.",1,1),crit('mon','Monster','Beast','{3}{B}{B}: Monstrosity 3.\nAs long as Monster is monstrous, it has menace.',2,2)];
+ a.hand=[crit('nin','Ninja of the Deep Hours','Human Ninja','Ninjutsu {1}{U}\nWhenever Ninja of the Deep Hours deals combat damage to a player, you may draw a card.',2,2)];a.mana.U=1;a.library=[bear('l1')];
+ s.players[1].battlefield=[crit('blk','Wall','Wall','',0,4)];
+ s=ok(s,'ACTIVATE',{iid:'mon',index:0});s=ok(s,'RESOLVE');const mon=s.players[0].battlefield.find(c=>c.iid==='mon');assert(mon.monstrous);assert.equal(MC.power(mon,s.players[0]),5);assert(MC.hasKw(mon,'Menace'));
+ s=ok(s,'ACTIVATE',{iid:'kuro',index:0});s=ok(s,'RESOLVE');
+ s=ok(s,'COMBAT',{attackers:['att','kuro'],targetPlayerId:'b'});
+ assert.match(act(s,'NINJUTSU',{iid:'nin',returnIid:'att'}).error,/bloqueos/);
+ s=ok(s,'DECLARE_BLOCKS',{blocks:[{attackerId:'kuro',blockerId:'blk'}]},'b');
+ assert.match(act(s,'NINJUTSU',{iid:'nin',returnIid:'kuro'}).error,/no haya sido bloqueada/);
+ s=ok(s,'NINJUTSU',{iid:'nin',returnIid:'att'});assert(s.players[0].hand.some(c=>c.iid==='att'));assert(s.pendingCombat.attackers.includes('nin'));
+ s=ok(s,'RESOLVE_COMBAT',{confirm:true});assert.equal(s.players[1].life,38);assert.equal(s.stack.length,1,'el ninja se dispara');s=ok(s,'RESOLVE');
+ const kuro=s.players[0].battlefield.find(c=>c.iid==='kuro');assert(kuro,'bushido +1/+1 lo deja 2/2 contra un muro 0/4');
+});
+
+test('elige un tipo de criatura, Path to Exile y Eternal Witness',()=>{
+ let s=game();const a=s.players[0];a.battlefield=[rat('r1'),bear('own')];s.players[1].battlefield=[bear('b1'),rat('r2')];s.players[1].library=[card('pl','Plains','Basic Land — Plains')];
+ a.hand=[card('cf','Crippling Fear','Sorcery',"Choose a creature type. Creatures that aren't of the chosen type get -3/-3 until end of turn."),card('pte','Path to Exile','Instant','Exile target creature. Its controller may search their library for a basic land card, put that card onto the battlefield tapped, then shuffle.'),crit('ew','Eternal Witness','Human Shaman','When Eternal Witness enters, return target card from your graveyard to your hand.',2,1)];
+ s=ok(s,'CAST',{iid:'cf'});s=ok(s,'RESOLVE');s=ok(s,'CHOOSE',{promptId:s.prompts[0].id,value:'rat'});s=ok(s,'RESOLVE');
+ assert.deepEqual(s.players[0].battlefield.map(c=>c.iid),['r1']);assert.deepEqual(s.players[1].battlefield.map(c=>c.iid),['r2']);
+ s=ok(s,'CAST',{iid:'pte'});s=ok(s,'RESOLVE',{targets:[{playerId:'b',iid:'r2'}]});assert.equal(s.players[1].battlefield[0].iid,'pl');assert(s.players[1].battlefield[0].tapped);
+ s=ok(s,'CAST',{iid:'ew'});s=ok(s,'RESOLVE');s=ok(s,'RESOLVE');const pr=s.prompts[0];assert.equal(pr.kind,'return');s=ok(s,'CHOOSE',{promptId:pr.id,picks:['cf']});assert(s.players[0].hand.some(c=>c.iid==='cf'));
+});
+
+test('Brainstorm, Ponder y Stock Up: mirar, reordenar y devolver cartas',()=>{
+ let s=game();const a=s.players[0];a.library=['l1','l2','l3','l4','l5','l6'].map(i=>bear(i));
+ a.hand=[card('bs','Brainstorm','Instant','Draw three cards, then put two cards from your hand on top of your library in any order.'),card('po','Ponder','Sorcery','Look at the top three cards of your library, then put them back in any order. You may shuffle.\nDraw a card.'),card('su','Stock Up','Sorcery','Look at the top five cards of your library. Put two of them into your hand and the rest on the bottom of your library in any order.')];
+ for(const c of a.hand)assert.deepEqual(FX.uncovered(c),[],c.name);
+ s=ok(s,'CAST',{iid:'bs'});s=ok(s,'RESOLVE');const pr=s.prompts[0];assert.equal(pr.kind,'putBack');assert.equal(pr.min,2);
+ s=ok(s,'CHOOSE',{promptId:pr.id,picks:['po','su']});assert.deepEqual(s.players[0].library.slice(-2).map(c=>c.iid),['po','su']);assert.equal(s.players[0].hand.length,3);
+});
+
+test('morbid, delve, convocar y rueda',()=>{
+ let s=game();const a=s.players[0];a.library=['l1','l2','l3','l4','l5','l6','l7'].map(i=>bear(i));s.players[1].library=['m1','m2','m3','m4'].map(i=>bear(i));
+ a.graveyard=['g1','g2','g3','g4','g5'].map(i=>bear(i));a.battlefield=[bear('c1'),bear('c2'),card('isl','Island','Basic Land — Island')];
+ s.players[1].battlefield=[crit('big','Giant','Giant','',5,5),rat('sm')];
+ a.hand=[card('ts','Tragic Slip','Instant','Target creature gets -1/-1 until end of turn.\nMorbid — That creature gets -13/-13 until end of turn instead if a creature died this turn.',{mana_cost:'{B}'}),card('tc','Treasure Cruise','Sorcery','Delve\nDraw three cards.',{mana_cost:'{7}{U}'}),card('cv','Convoker','Sorcery','Convoke\nDraw a card.',{mana_cost:'{2}'}),card('wf','Windfall','Sorcery','Each player discards their hand, then draws cards equal to the greatest number of cards a player discarded this way.',{mana_cost:'{2}{U}'})];
+ s=ok(s,'CAST',{iid:'ts'});s=ok(s,'RESOLVE',{targets:[{playerId:'b',iid:'sm'}]});assert.equal(s.players[1].battlefield.length,1);
+ s.players[0].hand.push(card('ts2','Tragic Slip','Instant','Target creature gets -1/-1 until end of turn.\nMorbid — That creature gets -13/-13 until end of turn instead if a creature died this turn.'));
+ s=ok(s,'CAST',{iid:'ts2'});s=ok(s,'RESOLVE',{targets:[{playerId:'b',iid:'big'}]});assert.equal(s.players[1].battlefield.length,0,'morbid: -13/-13');
+ s.players[0].mana=mana({U:1,C:2});s=ok(s,'CAST',{iid:'tc',payMana:true,delve:5});assert.equal(s.players[0].exile.length,5);assert.equal(s.players[0].mana.U,0);s=ok(s,'RESOLVE');
+ s=ok(s,'CAST',{iid:'cv',payMana:true,convoke:['c1','c2']});assert(s.players[0].battlefield.find(c=>c.iid==='c1').tapped);s=ok(s,'RESOLVE');
+ s.players[1].hand=[bear('x1')];const n=s.players[0].hand.length;s.players[0].mana=mana({U:1,C:2});s=ok(s,'CAST',{iid:'wf',payMana:true});s=ok(s,'RESOLVE');assert.equal(s.players[1].hand.length,n-1,'todos roban la mano más grande descartada');
+});
+
+test('retrasados, copias, enderezar en turno ajeno, barajar en vez de cementerio y «puedes pagar»',()=>{
+ let s=game();const a=s.players[0];a.library=['l1','l2','l3'].map(i=>bear(i));s.players[1].library=['m1','m2','m3','m4'].map(i=>bear(i));
+ a.battlefield=[crit('pr','Pack Rat','Rat',"Pack Rat's power and toughness are each equal to the number of Rats you control.\n{2}{B}, Discard a card: Create a token that's a copy of Pack Rat.",0,0),card('ws',"Bender's Waterskin",'Artifact',"Untap Bender's Waterskin during each other player's untap step.",{tapped:true}),crit('dv','Drainpipe Vermin','Rat','When Drainpipe Vermin dies, you may pay {B}. If you do, target player discards a card.',1,1)];
+ a.hand=[bear('fodder'),card('ad','Arcane Denial','Instant',"Counter target spell. Its controller may draw up to two cards at the beginning of the next turn's upkeep.\nYou draw a card at the beginning of the next turn's upkeep."),card('nx','Nexus of Fate','Instant','Take an extra turn after this one.\nIf Nexus of Fate would be put into a graveyard from anywhere, reveal Nexus of Fate and shuffle it into its owner\'s library instead.')];
+ a.mana=mana({B:4,C:2});
+ s=ok(s,'ACTIVATE',{iid:'pr',index:0,discard:['fodder']});s=ok(s,'RESOLVE');const copies=s.players[0].battlefield.filter(c=>c.name==='Pack Rat');assert.equal(copies.length,2);assert.equal(MC.power(copies[1],s.players[0]),3);
+ s.players[1].hand=[card('sp','Spell','Sorcery','Draw a card.'),bear('bh')];s.activePlayerId='b';
+ s=ok(s,'NEXT_PHASE',{},'b');s.players[1].mana=mana({C:1});s=ok(s,'CAST',{iid:'sp'},'b');s=ok(s,'CAST',{iid:'ad'});s=ok(s,'RESOLVE',{targets:[{spellId:s.stack[0].id}]});assert.equal(s.delayed.length,2);
+ s=ok(s,'NEXT_TURN',{},'b');assert(!s.players[0].battlefield.find(c=>c.iid==='ws').tapped,'Waterskin se endereza en el turno de otro');
+ assert.equal(s.stack.length,2,'dos robos retrasados');const ha=s.players[0].hand.length;s=drain(s);assert.equal(s.players[0].hand.length,ha+1,'roba 1 por el efecto retrasado');assert.equal(s.players[1].hand.length,3,'el rival roba 2');
+ s=ok(s,'COUNTER',{iid:'dv',name:'-1/-1',delta:1});assert.equal(s.stack.at(-1).optional,true);s.players[0].mana=mana({B:1});s=ok(s,'RESOLVE',{targets:[{playerId:'b'}]});assert.equal(s.players[0].mana.B,0,'pagó {B}');assert.equal(s.prompts.find(x=>x.playerId==='b').kind,'discard');
+ s=ok(s,'CAST',{iid:'nx'});s=ok(s,'RESOLVE');assert(s.players[0].library.some(c=>c.iid==='nx'),'Nexus vuelve a la biblioteca');assert.deepEqual(s.extraTurns,['a']);
+});
+
+test('maná: tierras de dolor, Signets, elfos y altares; el pago automático usa criaturas sin mareo',()=>{
+ let s=game();const a=s.players[0];
+ a.battlefield=[card('pain','Caves of Koilos','Land','{T}: Add {C}.\n{T}: Add {W} or {B}. Caves of Koilos deals 1 damage to you.'),card('sig','Orzhov Signet','Artifact','{1}, {T}: Add {W}{B}.'),crit('elf','Llanowar Elves','Elf Druid','{T}: Add {G}.',1,1,{sick:true}),crit('arch','Elvish Archdruid','Elf Druid','{T}: Add {G} for each Elf you control.',2,2),card('alt',"Ashnod's Altar",'Artifact','Sacrifice a creature: Add {C}{C}.')];
+ assert.match(act(s,'TAP',{iid:'elf',tapped:true}).error,/acaba de entrar/);
+ s=ok(s,'TAP',{iid:'arch',tapped:true});assert.equal(s.players[0].mana.G,2);
+ s=ok(s,'TAP',{iid:'sig',tapped:true});assert.deepEqual([s.players[0].mana.G,s.players[0].mana.W,s.players[0].mana.B],[1,1,1]);
+ s=ok(s,'TAP',{iid:'pain',tapped:true,color:'B'});assert.equal(s.players[0].life,39);
+ s=ok(s,'ACTIVATE',{iid:'alt',index:0,sacrifice:['elf']});assert.equal(s.stack.length,0,'el maná no usa la pila');assert.equal(s.players[0].mana.C,2);
+});
+
+test('tierras: choque, revelar, rápidas y rebote',()=>{
+ let s=game();const a=s.players[0];
+ a.hand=[card('shock','Overgrown Tomb','Land — Swamp Forest',"({T}: Add {B} or {G}.)\nAs Overgrown Tomb enters, you may pay 2 life. If you don't, it enters tapped."),card('rot','Golgari Rot Farm','Land',"Golgari Rot Farm enters tapped.\nWhen Golgari Rot Farm enters, return a land you control to its owner's hand.\n{T}: Add {B}{G}."),card('fast','Blooming Marsh','Land','Blooming Marsh enters tapped unless you control two or fewer other lands.\n{T}: Add {B} or {G}.')];
+ s=ok(s,'CAST',{iid:'shock'});const pr=s.prompts[0];assert.equal(pr.kind,'shock');s=ok(s,'CHOOSE',{promptId:pr.id,picks:['pay']});assert.equal(s.players[0].life,38);assert(!s.players[0].battlefield[0].tapped);
+ s.players[0].landsPlayed=0;s=ok(s,'CAST',{iid:'fast'});assert(!s.players[0].battlefield.find(c=>c.iid==='fast').tapped,'rápida con pocas tierras: enderezada');
+ s.players[0].landsPlayed=0;s=ok(s,'CAST',{iid:'rot'});s=ok(s,'RESOLVE');const bp=s.prompts[0];assert.equal(bp.kind,'bounceOwn');s=ok(s,'CHOOSE',{promptId:bp.id,picks:['fast']});assert(s.players[0].hand.some(c=>c.iid==='fast'));
+});
+
+test('planeswalkers: lealtad al entrar, una habilidad por turno y el daño quita lealtad',()=>{
+ let s=game();const a=s.players[0];a.library=[bear('l1'),bear('l2')];
+ a.hand=[card('pw','Garruk Wildspeaker','Legendary Planeswalker — Garruk','+1: Untap two target lands.\n−1: Create a 3/3 green Beast creature token.\n−4: Creatures you control get +3/+3 and gain trample until end of turn.',{loyalty:'3'})];
+ s=ok(s,'CAST',{iid:'pw'});s=ok(s,'RESOLVE');const pw=s.players[0].battlefield[0];assert.equal(pw.counters.Lealtad,3);
+ assert.equal(MC.activated(pw).length,3);s=ok(s,'ACTIVATE',{iid:'pw',index:1});assert.equal(s.players[0].battlefield[0].counters.Lealtad,2);s=ok(s,'RESOLVE');assert(s.players[0].battlefield.some(c=>c.name==='Beast'));
+ assert.match(act(s,'ACTIVATE',{iid:'pw',index:1}).error,/este turno/);
+ s.activePlayerId='b';s.players[1].hand=[card('bolt','Lightning Bolt','Instant','Lightning Bolt deals 3 damage to any target.')];
+ s=ok(s,'CAST',{iid:'bolt'},'b');s=ok(s,'RESOLVE',{targets:[{playerId:'a',iid:'pw'}]},'b');assert(!s.players[0].battlefield.some(c=>c.iid==='pw'),'sin lealtad, al cementerio');
+});
+
+test('veneno: infectar, toxic y proliferar',()=>{
+ let s=game();const a=s.players[0];
+ a.battlefield=[crit('inf','Plague Stinger','Phyrexian Insect','Flying\nInfect',1,1),crit('tox','Bilious Skulldweller','Phyrexian Worm','Deathtouch\nToxic 1',1,1),card('ring','Ring','Artifact','',{counters:{Carga:1}})];
+ a.hand=[card('pro','Proliferate Spell','Sorcery','Each opponent gets a poison counter.\nProliferate.')];
+ s=ok(s,'COMBAT',{attackers:['inf','tox'],targetPlayerId:'b'});s=ok(s,'RESOLVE_COMBAT',{confirm:true,blocks:[]});
+ assert.equal(s.players[1].poison,2);assert.equal(s.players[1].life,39,'infectar no quita vidas; toxic sí suma veneno además del daño');
+ s=ok(s,'NEXT_PHASE');s=ok(s,'CAST',{iid:'pro'});s=ok(s,'RESOLVE');assert.equal(s.players[1].poison,4);assert.equal(s.players[0].battlefield.find(c=>c.iid==='ring').counters.Carga,2);
+});
+
+test('fichas y contadores «por cada», mirar con filtro, buscar con filtro y caminatas',()=>{
+ let s=game();const a=s.players[0];a.battlefield=[crit('e1','Elf A','Elf','',1,1),crit('e2','Elf B','Elf','',1,1)];
+ a.library=[bear('x1'),bear('x2'),crit('e3','Elf C','Elf','',1,1),card('f','Forest','Basic Land — Forest'),bear('x3')];
+ a.hand=[card('tk','Elf Swarm','Sorcery','Create a 1/1 green Elf Warrior creature token for each Elf you control.'),card('dg','Elf Look','Sorcery','Look at the top three cards of your library. You may reveal an Elf card from among them and put it into your hand. Put the rest on the bottom of your library in a random order.'),card('cn','Pump','Sorcery','Put a +1/+1 counter on each Elf you control.')];
+ for(const c of a.hand)assert.deepEqual(FX.uncovered(c),[],c.name);
+ s=ok(s,'CAST',{iid:'tk'});s=ok(s,'RESOLVE');assert.equal(s.players[0].battlefield.filter(c=>c.token).length,2);
+ s=ok(s,'CAST',{iid:'cn'});s=ok(s,'RESOLVE');assert.equal(s.players[0].battlefield.filter(c=>c.counters['+1/+1']===1).length,4);
+ s=ok(s,'CAST',{iid:'dg'});s=ok(s,'RESOLVE');const pr=s.prompts[0];assert.deepEqual(pr.options.map(o=>o.iid),['e3']);s=ok(s,'CHOOSE',{promptId:pr.id,picks:['e3']});assert(s.players[0].hand.some(c=>c.iid==='e3'));assert.equal(s.players[0].library.length,4);
+ const walker=crit('fw','Walker','Elf','Forestwalk',2,2);const blk=crit('bk','Blocker','Wall','',0,4);const def={battlefield:[card('ff','Forest','Basic Land — Forest'),blk]};
+ assert.equal(MC.canBlock(walker,blk,def),false);assert.equal(MC.canBlock(walker,blk,{battlefield:[blk]}),true);
+});
+
+test('caras dobles, modales parciales, eminencia, «uno o más», ganar vida y cascada',()=>{
+ let s=game(3);const a=s.players[0];a.library=[bear('l1'),card('cheap','Cheap Spell','Sorcery','Draw a card.',{cmc:1}),card('land1','Swamp','Basic Land — Swamp'),bear('l2',{cmc:6})];
+ const path={iid:'path',name:'Darkbore Pathway // Slitherbore Pathway',type_line:'Land // Land',oracle_text:'Darkbore Pathway\n{T}: Add {B}.\n\nSlitherbore Pathway\n{T}: Add {G}.',card_faces:[{name:'Darkbore Pathway',type_line:'Land',oracle_text:'{T}: Add {B}.'},{name:'Slitherbore Pathway',type_line:'Land',oracle_text:'{T}: Add {G}.'}],tapped:false,sick:false,damage:0,counters:{}};
+ assert.deepEqual(MC.manaSource(path,a).options,['B']);
+ const charm=card('ch','Odd Charm','Instant','Choose one —\n• Destroy target artifact.\n• Counter target spell if it\'s blue.');assert.deepEqual(FX.uncovered(charm),["• Counter target spell if it's blue."]);
+ a.command=[crit('edgar','Edgar Markov','Vampire Knight','Eminence — Whenever you cast another Vampire spell, if Edgar Markov is in the command zone or on the battlefield, create a 1/1 black Vampire creature token.',4,4,{isCommander:true,type_line:'Legendary Creature — Vampire Knight'})];
+ a.battlefield=[card('bond','Sanguine Bond','Enchantment','Whenever you gain life, target opponent loses that much life.'),card('mr','Mortality Ring','Enchantment','Whenever a token you control leaves the battlefield, each opponent loses 1 life and you gain 1 life.'),crit('lead','Elf Lord','Elf','Whenever one or more other Elves you control enter, you gain 1 life. This ability triggers only once each turn.',2,2)];
+ a.hand=[crit('vamp','Vampire Pup','Vampire','',1,1),card('cas','Bloodbraid Thing','Sorcery','Cascade\nYou gain 2 life.',{cmc:4}),card('elves','Elf Pack','Sorcery','Create two 1/1 green Elf Warrior creature tokens.')];
+ s=ok(s,'CAST',{iid:'vamp'});assert.equal(s.stack.length,2,'eminencia desde la zona de mando');s=drain(s);assert(s.players[0].battlefield.some(c=>c.name==='Vampire'&&c.token));
+ s=ok(s,'CAST',{iid:'elves'});s=ok(s,'RESOLVE');assert.equal(s.stack.length,1,'«uno o más» se dispara una sola vez');s=ok(s,'RESOLVE');assert.equal(s.stack.length,1,'ganar vida dispara Sanguine Bond');s=ok(s,'RESOLVE',{targets:[{playerId:'b'}]});assert.equal(s.players[1].life,39);
+ const tok=s.players[0].battlefield.find(c=>c.token&&c.name==='Elf Warrior');s=ok(s,'MOVE',{iid:tok.iid,from:'battlefield',to:'graveyard'});assert.equal(s.stack.length,1,'la ficha que deja el campo dispara');s=drain(s);
+ s=ok(s,'CAST',{iid:'cas'});assert.equal(s.stack.at(-1).card.abilitySteps?.[0]?.type,'cascade');s=ok(s,'RESOLVE');assert.equal(s.stack.at(-1).card.iid,'cheap','cascada lanza el primer hechizo de menor valor');
+ assert(s.players[0].library.some(c=>c.iid==='land1')&&s.players[0].library.some(c=>c.iid==='l2'),'el resto vuelve al fondo');
+ const tl=card('tl','Bountiful Promenade','Land','Bountiful Promenade enters tapped unless you have two or more opponents.\n{T}: Add {G} or {W}.');s.players[0].hand.push(tl);s.players[0].landsPlayed=0;s=drain(s);s=ok(s,'CAST',{iid:'tl'});assert(!s.players[0].battlefield.find(c=>c.iid==='tl').tapped);
+});
