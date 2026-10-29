@@ -28,8 +28,8 @@ test('niebla previene el combate y el daño al monarca le roba la corona',()=>{
  let s=game();s.players[0].battlefield=[bear('x1')];s.monarch='b';
  s.players[1].hand=[sp('fog','Fog','Instant','Prevent all combat damage that would be dealt this turn.')];
  s=ok(s,'COMBAT',{attackers:['x1'],targetPlayerId:'b'});s=ok(s,'CAST',{iid:'fog'},'b');s=ok(s,'RESOLVE',{},'a');
- s=ok(s,'RESOLVE_COMBAT',{confirm:true,blocks:[]});assert.equal(s.players[1].life,40);assert.equal(s.monarch,'b');
- s=game();s.players[0].battlefield=[bear('x1')];s.monarch='b';s=ok(s,'COMBAT',{attackers:['x1'],targetPlayerId:'b'});s=ok(s,'RESOLVE_COMBAT',{confirm:true,blocks:[]});
+ s=ok(s,'DECLARE_BLOCKS',{blocks:[]},'b');s=ok(s,'RESOLVE_COMBAT',{confirm:true});assert.equal(s.players[1].life,40);assert.equal(s.monarch,'b');
+ s=game();s.players[0].battlefield=[bear('x1')];s.monarch='b';s=ok(s,'COMBAT',{attackers:['x1'],targetPlayerId:'b'});s=ok(s,'DECLARE_BLOCKS',{blocks:[]},'b');s=ok(s,'RESOLVE_COMBAT',{confirm:true});
  assert.equal(s.players[1].life,38);assert.equal(s.monarch,'a');
 });
 
@@ -50,7 +50,7 @@ test('tripular, persistir, enaltecido, aniquilador y no enderezarse',()=>{
  a.battlefield=[card('cop',"Smuggler's Copter",'Artifact — Vehicle','Flying\nCrew 1',{power:'3',toughness:'3'}),rat('r1'),crit('pe','Kitchen Finks','Ouphe','Persist',3,2),crit('ex','Akrasan Squire','Human Soldier','Exalted',1,1)];
  assert.equal(MC.isCreature(a.battlefield[0]),false);
  s=ok(s,'ACTIVATE',{iid:'cop',index:0});s=drain(s);const cop=s.players[0].battlefield.find(x=>x.iid==='cop');assert(MC.isCreature(cop));assert(s.players[0].battlefield.find(x=>x.iid==='r1').tapped);
- s=ok(s,'COMBAT',{attackers:['cop'],targetPlayerId:'b'});s=drain(s);s=ok(s,'RESOLVE_COMBAT',{confirm:true,blocks:[]});assert.equal(s.players[1].life,40-4,'3 + enaltecido');
+ s=ok(s,'COMBAT',{attackers:['cop'],targetPlayerId:'b'});s=drain(s);s=ok(s,'DECLARE_BLOCKS',{blocks:[]},'b');s=ok(s,'RESOLVE_COMBAT',{confirm:true});assert.equal(s.players[1].life,40-4,'3 + enaltecido');
  s.players[0].hand=[sp('sh','Shock','Instant','Shock deals 2 damage to any target.')];s=ok(s,'CAST',{iid:'sh'});s=ok(s,'RESOLVE',{targets:[{playerId:'a',iid:'pe'}]});
  const fin=s.players[0].battlefield.find(x=>x.iid==='pe');assert(fin,'persistir la devuelve');assert.equal(fin.counters['-1/-1'],1);
  s=game();s.players[0].battlefield=[crit('ko','Kozilek','Eldrazi','Annihilator 2',10,10)];s.players[1].battlefield=[bear('b1'),bear('b2'),card('fo','Forest','Basic Land — Forest')];

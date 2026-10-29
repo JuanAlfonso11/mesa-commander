@@ -49,23 +49,23 @@ test('habilidades: dar prisa permite atacar recién llegada; vuelven a las impre
  assert.equal(act(s,'COMBAT',{attackers:['h'],targetPlayerId:'b'}).ok,false);
  s=ok(s,'KEYWORD',{iid:'h',keyword:'Haste',on:true});s=ok(s,'KEYWORD',{iid:'h',keyword:'Trample',on:false});
  assert.deepEqual(s.players[0].battlefield[0].keywords,['Haste']);
- s=ok(s,'COMBAT',{attackers:['h'],targetPlayerId:'b'});s=ok(s,'RESOLVE_COMBAT',{confirm:true});assert.equal(s.players[1].life,38);
+ s=ok(s,'COMBAT',{attackers:['h'],targetPlayerId:'b'});s=ok(s,'DECLARE_BLOCKS',{blocks:[]},'b');s=ok(s,'RESOLVE_COMBAT',{confirm:true});assert.equal(s.players[1].life,38);
  s=ok(s,'MOVE',{iid:'h',from:'battlefield',to:'hand'});assert.deepEqual(s.players[0].hand[0].keywords,['Trample']);assert.equal(s.players[0].hand[0].baseKeywords,undefined);
  assert.equal(act(s,'KEYWORD',{iid:'h',keyword:'Hexproof',on:true}).ok,false);
  s.players[0].battlefield=[bear('m')];s=ok(s,'KEYWORD',{iid:'m',keyword:'Menace',on:true});s.players[1].battlefield=[bear('g')];
  s=ok(s,'NEXT_TURN');s=ok(s,'NEXT_TURN',{},'b');s=ok(s,'COMBAT',{attackers:['m'],targetPlayerId:'b'});
- assert.equal(act(s,'RESOLVE_COMBAT',{confirm:true,blocks:[{attackerId:'m',blockerId:'g'}]}).ok,false,'amenaza exige dos bloqueadores');
+ assert.equal(act(s,'DECLARE_BLOCKS',{blocks:[{attackerId:'m',blockerId:'g'}]},'b').ok,false,'amenaza exige dos bloqueadores');
 });
 
 test('instantáneos y destello en turno ajeno; el resto solo en tu turno con la pila vacía',()=>{
  let s=game();s.activePlayerId='a';
  const bolt={iid:'i1',name:'Shock',type_line:'Instant',mana_cost:''},sorc={iid:'s1',name:'Divination',type_line:'Sorcery',mana_cost:''};
  s.players[1].hand=[bolt,sorc,bear('b1'),bear('f1',{keywords:['Flash']})];s.players[0].hand=[bear('a1'),bear('a2')];
- assert.match(act(s,'CAST',{iid:'s1'},'b').error,/solo en tu turno/);
- assert.equal(act(s,'CAST',{iid:'b1'},'b').ok,false);
- s=ok(s,'CAST',{iid:'a1'});
- assert.match(act(s,'CAST',{iid:'a2'}).error,/pila/);
- s=ok(s,'CAST',{iid:'i1'},'b');s=ok(s,'CAST',{iid:'f1'},'b');
+ assert.match(act(s,'CAST',{unpaid:true,iid:'s1'},'b').error,/solo en tu turno/);
+ assert.equal(act(s,'CAST',{unpaid:true,iid:'b1'},'b').ok,false);
+ s=ok(s,'CAST',{unpaid:true,iid:'a1'});
+ assert.match(act(s,'CAST',{unpaid:true,iid:'a2'}).error,/pila/);
+ s=ok(s,'CAST',{unpaid:true,iid:'i1'},'b');s=ok(s,'CAST',{unpaid:true,iid:'f1'},'b');
  s=ok(s,'RESOLVE',{},'b');s=ok(s,'RESOLVE',{},'b');
  assert.equal(act(s,'RESOLVE',{},'b').ok,false,'el hechizo de A lo resuelve A');
  s=ok(s,'RESOLVE');assert.equal(s.stack.length,0);

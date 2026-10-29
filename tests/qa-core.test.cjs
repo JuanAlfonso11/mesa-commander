@@ -36,7 +36,7 @@ test('QA: private views expose no opponents hand identity, library contents, rng
  const s=setup(),v=MC.viewFor(s,'a');
  assert.equal(v.seed,undefined);assert.equal(v.appliedActionIds,undefined);assert.equal(v.nextInstance,undefined);
  assert.equal(v.players[1].hand.length,0);assert.equal(v.players[1].handCount,7);
- for(const p of v.players){assert.deepEqual(p.library,[]);assert.equal(p.libraryCount,92);}
+ for(const p of v.players){assert.deepEqual(p.library,[]);assert.equal(p.libraryCount,p.id==='a'?91:92,'103.8c: el primero roba en multijugador');}
  v.players[0].hand[0].name='Modified';assert.notEqual(s.players[0].hand[0].name,'Modified');
  const spectator=MC.viewFor(s,'unknown');assert(spectator.players.every(p=>p.hand.length===0));
 });
@@ -56,13 +56,14 @@ test('QA: wrong colors and hybrid assistance reject atomically; {0} is payable',
 test('QA regression: card without printed mana cost cannot be assisted as a zero-cost spell',()=>{
  let s=setup();s.players[0].hand=[{...card('No printed cost',{mana_cost:''}),iid:'nocost'}];
  assert.equal(go(s,'CAST',{iid:'nocost',payMana:true}).ok,false);
- assert.equal(go(s,'CAST',{iid:'nocost',payMana:false}).ok,true);
+ assert.equal(go(s,'CAST',{iid:'nocost'}).ok,false,'sin coste impreso no se lanza gratis por defecto');
+ assert.equal(go(s,'CAST',{iid:'nocost',unpaid:true}).ok,true,'solo como corrección manual explícita');
 });
 
 test('QA: commander unblocked damage, double strike and lifelink recorded together',()=>{
  let s=setup();const p=s.players[0];const c=p.command.pop();c.power='11';c.keywords=['Double strike','Lifelink'];c.sick=false;p.battlefield.push(c);
  s=go(s,'COMBAT',{attackers:[c.iid],targetPlayerId:'b'}).state;
- s=go(s,'RESOLVE_COMBAT',{confirm:true,blockedIds:[]}).state;
+ s=go(s,'DECLARE_BLOCKS',{blocks:[]},'b').state;s=go(s,'RESOLVE_COMBAT',{confirm:true}).state;
  assert.equal(s.players[1].life,18);assert.equal(s.players[1].commanderDamage.a,22);assert.equal(s.players[1].eliminated,true);assert.equal(s.players[0].life,62);
 });
 

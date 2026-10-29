@@ -11,7 +11,7 @@ const N='(a|an|one|two|three|four|five|six|seven|eight|nine|ten|\\d+|x)';
 // «X» es la cantidad elegida al lanzar o activar.
 const num=v=>v==='x'?{of:'x'}:NUM[v]??Number(v);
 const COLOR_WORD={white:'W',blue:'U',black:'B',red:'R',green:'G',colorless:'C'};
-const KEYWORD={'devoid':'Devoid','split second':'Split second','persist':'Persist','undying':'Undying','exalted':'Exalted','storm':'Storm','affinity for artifacts':'Affinity for artifacts','forestwalk':'Forestwalk','islandwalk':'Islandwalk','swampwalk':'Swampwalk','mountainwalk':'Mountainwalk','plainswalk':'Plainswalk','infect':'Infect','wither':'Wither','partner':'Partner','flying':'Flying','reach':'Reach','vigilance':'Vigilance','haste':'Haste','trample':'Trample','lifelink':'Lifelink','deathtouch':'Deathtouch','menace':'Menace','first strike':'First strike','double strike':'Double strike','indestructible':'Indestructible','defender':'Defender','fear':'Fear','skulk':'Skulk','flash':'Flash','hexproof':'Hexproof','shroud':'Shroud','changeling':'Changeling','prowess':'Prowess','intimidate':'Intimidate'};
+const KEYWORD={'shadow':'Shadow','horsemanship':'Horsemanship','devoid':'Devoid','split second':'Split second','persist':'Persist','undying':'Undying','exalted':'Exalted','storm':'Storm','affinity for artifacts':'Affinity for artifacts','forestwalk':'Forestwalk','islandwalk':'Islandwalk','swampwalk':'Swampwalk','mountainwalk':'Mountainwalk','plainswalk':'Plainswalk','infect':'Infect','wither':'Wither','partner':'Partner','flying':'Flying','reach':'Reach','vigilance':'Vigilance','haste':'Haste','trample':'Trample','lifelink':'Lifelink','deathtouch':'Deathtouch','menace':'Menace','first strike':'First strike','double strike':'Double strike','indestructible':'Indestructible','defender':'Defender','fear':'Fear','skulk':'Skulk','flash':'Flash','hexproof':'Hexproof','shroud':'Shroud','changeling':'Changeling','prowess':'Prowess','intimidate':'Intimidate'};
 // Palabras clave que el motor aplica de verdad (combate, objetivos, momento de lanzar, tipos, disparos).
 const KEYWORD_IMPL=new Set(Object.values(KEYWORD));
 // Objetivos de permanentes que el motor sabe validar.
@@ -55,7 +55,7 @@ const FILTER_SKIP=new Set(['a','an','one','each','all','target','card','cards','
 function parseObj(raw){
  if(!raw)return null;let s=' '+String(raw).toLowerCase().replace(/,/g,' ').replace(/\s+/g,' ').trim()+' ';
  const spec={types:[],subtypes:[]};
- const take=(re,fn)=>{if(re.test(s)){s=s.replace(re,' ');fn();}};
+ const take=(re,fn)=>{if(re.test(s)){while(re.test(s))s=s.replace(re,' ');fn();}};// en bucle: «you control» puede repetirse al componer
  take(/ that aren't of the chosen type /,()=>spec.notChosenType=true);
  take(/ of the chosen color /,()=>spec.chosenColor=true);
  take(/ that was dealt damage this turn /,()=>spec.damaged=true);
@@ -174,7 +174,7 @@ function subjectOf(s){
 }
 function parseSentence(raw){
  const s=raw.toLowerCase().replace(/’/g,"'").replace(/\s+/g,' ').trim();let m;
- if(/^(?:it|they) can't be regenerated$/.test(s))return [];
+ if(/^(?:it|they) can't be regenerated$|^a creature destroyed this way can't be regenerated$/.test(s))return [{type:'noRegen'}];
  if(/^~ costs \{\d+\} (?:less|more) to cast(?: for each [a-z ]+)?$/.test(s))return [];
  if(/^activate only (?:as a sorcery|once each turn)$/.test(s))return [];
  if(/^spend only (?:white|blue|black|red|green|colorless) mana on x$/.test(s))return [];
@@ -262,7 +262,7 @@ function parseSentence(raw){
  if((m=s.match(/^return all (.+?) to their owners' hands$/))){const spec=parseObj(m[1]);if(spec)return [{type:'wipe',what:'filter',spec,bounce:true}];}
  if((m=s.match(/^counter target (spell|noncreature spell|creature spell|instant or sorcery spell|instant spell|sorcery spell|artifact, creature, or planeswalker spell|enchantment, instant, or sorcery spell|activated or triggered ability|activated ability, triggered ability, or legendary spell)$/)))return [{type:'counter',spell:m[1]}];
  if((m=s.match(/^counter target (spell|noncreature spell|creature spell|instant or sorcery spell|instant spell|sorcery spell|activated or triggered ability) unless its controller pays ((?:\{[^}]+\})+)$/)))return [{type:'counter',spell:m[1],unless:m[2].toUpperCase()}];
- if(/^if that spell is countered this way, exile it instead of putting it into its owner's graveyard$/.test(s))return [];
+ if(/^if that spell is countered this way, exile it instead of putting it into its owner's graveyard$/.test(s))return [{type:'counterExile'}];
  // Fichas
  if((m=s.match(new RegExp('^(?:you )?create '+N+' (\\d+)/(\\d+) ([a-z ,]+?) creature tokens?(?: with ([a-z ,]+))?$')))){const t=tokenStep(num(m[1]),+m[2],+m[3],m[4],m[5]);return t?[t]:null;}
  if((m=s.match(/^create (?:x|a number of) (\d+)\/(\d+) ([a-z ,]+?) creature tokens?(?: with ([a-z ,]+))?(?:,| equal to) (?:where x is )?(.+)$/))){const a=parseAmount(m[5]);const t=a&&tokenStep(1,+m[1],+m[2],m[3],m[4]);return t?[{...t,count:a}]:null;}
@@ -294,7 +294,7 @@ function parseSentence(raw){
  if((m=s.match(new RegExp('^return (up to '+N+' |'+N+' )?target (?:(.+?) )?cards? from your graveyard to (your hand|the battlefield(?: tapped)?)$')))){const spec=m[4]?parseObj(m[4]):{types:[],subtypes:[],any:true};const cnt=m[2]?num(m[2]):m[3]?num(m[3]):1;if(spec)return [{type:'returnCard',spec,whose:'you',count:cnt,upTo:!!m[2],to:/hand/.test(m[5])?'hand':'battlefield',tapped:/tapped/.test(m[5])}];}
  if((m=s.match(/^(?:put|return) target (.+?) card from a graveyard onto the battlefield under your control$/))){const spec=parseObj(m[1]);if(spec)return [{type:'returnCard',spec,whose:'any',count:1,to:'battlefield'}];}
  if((m=s.match(/^exile target player's graveyard$/)))return [{type:'exileGrave',who:'target-player'}];
- if((m=s.match(/^exile (?:up to (\w+) )?target cards? from (?:an opponent's|a|target player's|that player's) graveyard$/)))return [{type:'exileCard',count:m[1]?num(m[1]):1,upTo:!!m[1]}];
+ if((m=s.match(/^exile (?:up to (\w+) )?target cards? from (an opponent's|a|target player's|that player's) graveyard$/)))return [{type:'exileCard',count:m[1]?num(m[1]):1,upTo:!!m[1],...(m[2]==="that player's"?{whose:'event'}:{})}];
  if((m=s.match(new RegExp('^(?:target player|each opponent|each player|you) mills? '+N+' cards?$')))){const who=s.startsWith('target')?'target-player':s.startsWith('each player')?'each-player':s.startsWith('each')?'each-opponent':'you';return [{type:'mill',count:num(m[1]),who}];}
  // Descartar y sacrificar (eligen los jugadores afectados)
  if((m=s.match(new RegExp('^(each opponent|each player|target opponent|target player|you) discards? '+N+' cards?$')))||(m=s.match(new RegExp('^(discard) '+N+' cards?$')))){const who={'each opponent':'each-opponent','each player':'each-player','target opponent':'target-opponent','target player':'target-player',you:'you',discard:'you'}[m[1]];return [{type:'discard',who,count:num(m[2])}];}
@@ -353,6 +353,8 @@ function parseClause(s){
 }
 function parseLines(text){const out=[];for(const s of sentences(text)){const r=parseClause(s);if(!r)return null;out.push(...r);}
  for(let i=0;i<out.length;i++){const a=out[i],b=out[i+1];
+  if(b?.type==='noRegen'&&['destroy','wipe'].includes(a.type)){out.splice(i,2,{...a,noRegen:true});continue;}
+  if(b?.type==='counterExile'&&a.type==='counter'){out.splice(i,2,{...a,exile:true});continue;}
   if((a.type==='search'||a.type==='ramp')&&b?.type==='untapIfLands'){out.splice(i,2,{...a,tapped:{unlessLands:b.n}});continue;}
   if(a.type==='lookTop'&&b?.type==='lookBack'){out.splice(i,2,{type:'scry',count:a.n,order:true});continue;}
   if(a.type==='lookTop'&&b?.type==='lookTake'){out.splice(i,2,{type:'dig',look:a.n,take:b.take});continue;}
@@ -504,6 +506,10 @@ function staticAbility(line){
  if(/^if you would gain life, you gain twice that much life instead$/.test(l))return {kind:'static',type:'lifeGain',mult:2};
  if((m=l.match(/^if you would gain life, you gain that much life plus (\d+) instead$/)))return {kind:'static',type:'lifeGain',plus:+m[1]};
  if(/^if (?:one or more|an effect would create one or more) tokens would be created under your control, twice that many of those tokens are created instead$|^if an effect would create one or more tokens under your control, it creates twice that many of those tokens instead$/.test(l))return {kind:'static',type:'tokenDouble'};
+ if(/^enchanted creature can't attack or block$/.test(l))return {kind:'static',type:'anthem',attached:'enchanted',p:0,t:0,kws:["Can't attack","Can't block"]};
+ if(/^enchanted creature can't attack$/.test(l))return {kind:'static',type:'anthem',attached:'enchanted',p:0,t:0,kws:["Can't attack"]};
+ if(/^~ can't attack or block$/.test(l))return {kind:'static',type:'anthem',self:true,p:0,t:0,kws:["Can't attack","Can't block"]};
+ if(/^~ can't attack$/.test(l))return {kind:'static',type:'anthem',self:true,p:0,t:0,kws:["Can't attack"]};
  if(/^~ can't block$/.test(l))return {kind:'static',type:'anthem',self:true,p:0,t:0,kws:["Can't block"]};
  if(/^~ can't be blocked$/.test(l))return {kind:'static',type:'anthem',self:true,p:0,t:0,kws:['Unblockable']};
  if(/^~ can be your commander$|^a deck can have any number of cards named ~$|^a deck can have up to \w+ cards named ~$/.test(l))return {kind:'static',type:'none'};
@@ -678,7 +684,7 @@ function describe(step){
   case 'counters':return step.count+' contador(es) '+(step.kind||'+1/+1')+' '+(step.target==='each-own'?'en cada criatura tuya':step.target==='self'?'en esta carta':'en una criatura');
   case 'ramp':return 'Busca '+step.count+' tierra(s) básica(s) '+(step.to==='hand'?'a tu mano':'al campo'+(step.tapped?' girada(s)':''));
   case 'search':return 'Busca en tu biblioteca '+(step.to==='hand'?'y ponla en tu mano':step.to==='top'?'y ponla encima':'y ponla en el campo');
-  case 'returnCard':return 'Regresa '+(step.count>1?step.count+' cartas':'una carta')+' del cementerio '+(step.to==='hand'?'a la mano':'al campo');
+  case 'returnCard':return 'Regresa '+(step.count>1?step.count+' cartas':'una carta')+' del cementerio '+({hand:'a la mano',top:'encima de tu biblioteca'}[step.to]||'al campo');
   case 'discard':return ({you:'Descartas','each-opponent':'Cada oponente descarta','each-player':'Cada jugador descarta','target-player':'El jugador objetivo descarta','target-opponent':'El oponente objetivo descarta'}[step.who]||'Descarta')+' '+step.count+' carta(s)'+(step.random?' al azar':'');
   case 'sacrifice':return ({you:'Sacrificas','each-opponent':'Cada oponente sacrifica','each-player':'Cada jugador sacrifica','target-player':'El jugador objetivo sacrifica','target-opponent':'El oponente objetivo sacrifica'}[step.who]||'Sacrifica')+(step.self?' esta carta':' '+step.count+' permanente(s)');
   case 'pump':return (step.target==='self'?'Esta carta':step.target==='each'?'Tus criaturas':'Una criatura')+' '+(typeof step.p==='number'?(step.p>=0?'+':'')+step.p+'/'+(step.t>=0?'+':'')+step.t:'±X')+(step.kws?.length?' y '+step.kws.join(', '):'')+' hasta el final del turno';

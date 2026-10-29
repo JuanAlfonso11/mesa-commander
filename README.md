@@ -140,6 +140,14 @@ La mesa ahora lee el texto Oracle de cada carta y aplica sola sus habilidades. L
   («16 de 21 — Marrow-Gnawer (Juan)»; rojo desde 15) y preferencias de zona por comandante (903.9): en su ficha eliges si va a la
   zona de mando en vez del cementerio, exilio, biblioteca o mano. Por defecto, como en MTGO: todo a la zona de mando menos la mano.
 
+- **0.8.7 (4 agentes jugaron partidas completas y reportaron errores)**: lanzar siempre cobra el coste (reserva y, si no alcanza,
+  gira tus tierras; «Sin pagar (corrección)» queda anotado), tierras y conjuros solo en fase principal, robo después de los disparos
+  de mantenimiento, un combate por turno, cada defensor declara sus bloqueos una vez y el atacante ya no puede cambiarlos, los
+  bloqueos se mantienen aunque el bloqueador muera, protección previene daño, Pacifism, sombra y equitación, contrarrestar
+  habilidades sin cartas fantasma, Force of Negation exilia, «no se puede regenerar», disparos de muertes simultáneas,
+  Heraldic Banner, Orcrist, Witch's Cottage, Skullsnatcher, destreza concedida, el turno pasa si el activo pierde, decks de
+  práctica con su texto real (Marrow-Gnawer ya se activa), botón «🛡 Bloquear» cuando te atacan y «Más tarde» en elecciones.
+
 `node tools/scryfall-coverage.cjs` descarga las cartas de Scryfall y mide qué porcentaje de las legales en Commander aplica el motor solo (y las frases que faltan, ordenadas por popularidad en EDHREC).
 `node tools/coverage.cjs <links de Archidekt>` mide qué cartas de un deck quedan automáticas y lista las líneas manuales.
 `node tools/fixture.cjs tools/fixtures/decks.json <links>` guarda decks y `node tools/sim.cjs` juega partidas completas entre bots con ellos para detectar errores del motor.

@@ -67,6 +67,7 @@ function botTurn(MC,state,id){
  function act(type,payload={}){const r=MC.dispatch(s,{id:'bot-'+s.turn+'-'+s.revision+'-'+(++seq),type,actorId:id,payload});if(r.ok){s=r.state;events.push(...r.events);me=s.players.find(p=>p.id===id);}return r.ok;}
  // Resuelve lo que el bot puso en la pila (hechizos y disparos). Se detiene ante objetos de otro jugador.
  function drain(){for(let i=0;i<40&&s.stack.length&&!s.winnerId;i++){const top=s.stack.at(-1);if(top.controllerId!==id)return false;const t=planTargets(MC,s,me,top);if(!act('RESOLVE',t&&t.targets.length?{targets:t.targets}:{}))if(!act('RESOLVE',{manual:true}))return false;}return !s.stack.length;}
+ drain();if(s.phase===0&&!s.stack.length)act('NEXT_PHASE');// disparos de mantenimiento, robo y fase principal
  if(!me.turnDrawn)act('DRAW',{count:1});
  // 1. Tierra: la que más colores útiles aporta.
  if(me.landsPlayed<1){const lands=me.hand.filter(MC.isLand).map(c=>({c,v:landScore(MC,me,c)})).sort((a,b)=>b.v-a.v);if(lands.length)act('CAST',{iid:lands[0].c.iid,from:'hand'});}
@@ -120,8 +121,10 @@ function suggestBlocks(MC,s,defId){
  let incoming=attackers.reduce((n,a)=>n+dmgOf(a),0);
  const cmdrLethal=attackers.some(a=>a.isCommander&&(def.commanderDamage[att.id]||0)+dmgOf(a)>=21);
  for(const a of attackers){
-  if(kw(a,'Menace'))continue;
   const able=free.filter(b=>!used.has(b.iid)&&MC.canBlock(a,b,def));if(!able.length)continue;
+  if(kw(a,'Menace')){// amenaza: solo con dos bloqueadores y solo si el golpe es peligroso
+   if(able.length>=2&&(incoming>=def.life||(cmdrLethal&&a.isCommander))){const two=able.slice().sort((x,y)=>threat(MC,x,def)-threat(MC,y,def)).slice(0,2);for(const b of two){used.add(b.iid);blocks.push({attackerId:a.iid,blockerId:b.iid});}if(!kw(a,'Trample'))incoming-=dmgOf(a);}
+   continue;}
   const dies=b=>MC.power(a,att)>=MC.toughness(b)||kw(a,'Deathtouch');const kills=b=>MC.power(b,def)>=MC.toughness(a)||kw(b,'Deathtouch');
   let pick=able.find(b=>kills(b)&&!dies(b))||able.find(b=>!dies(b))||able.filter(b=>kills(b)&&threat(MC,b,def)<=threat(MC,a,att)).sort((x,y)=>threat(MC,x,def)-threat(MC,y,def))[0];
   const danger=incoming>=def.life||(cmdrLethal&&a.isCommander)||incoming>=def.life*0.5;

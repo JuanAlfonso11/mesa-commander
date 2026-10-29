@@ -73,7 +73,7 @@ test('combat: blockers trade, first strike wins, trample and lifelink, deathtouc
  a.battlefield=[bear('att1'),bear('fs',{keywords:['First strike']}),card('tr','Troll','Creature','',{power:'5',toughness:'5',keywords:['Trample','Lifelink']})];
  b.battlefield=[bear('blk1'),bear('blk2'),card('dt','Snake','Creature','',{power:'1',toughness:'1',keywords:['Deathtouch']})];
  s=ok(s,'COMBAT',{attackers:['att1','fs','tr'],targetPlayerId:'b'});
- s=ok(s,'RESOLVE_COMBAT',{confirm:true,blocks:[{attackerId:'att1',blockerId:'blk1'},{attackerId:'fs',blockerId:'blk2'},{attackerId:'tr',blockerId:'dt'}]});
+ s=ok(s,'DECLARE_BLOCKS',{blocks:[{attackerId:'att1',blockerId:'blk1'},{attackerId:'fs',blockerId:'blk2'},{attackerId:'tr',blockerId:'dt'}]},'b');s=ok(s,'RESOLVE_COMBAT',{confirm:true});
  const A=s.players[0].battlefield.map(c=>c.iid),B=s.players[1].battlefield.map(c=>c.iid);
  assert.deepEqual(A,['fs']);assert.deepEqual(B,[]);// trade, first strike survives, deathtouch kills troll
  assert.equal(s.players[1].life,36);assert.equal(s.players[0].life,45);// 4 tramples over; lifelink 5
@@ -83,9 +83,9 @@ test('combat: flying and menace block legality, defender cannot attack',()=>{
  let s=game();const a=s.players[0],b=s.players[1];a.battlefield=[bear('fly',{keywords:['Flying']}),bear('men',{keywords:['Menace']}),bear('wall',{keywords:['Defender']})];b.battlefield=[bear('g1'),bear('g2'),bear('reach',{keywords:['Reach']})];
  assert.equal(act(s,'COMBAT',{attackers:['wall'],targetPlayerId:'b'}).ok,false);
  s=ok(s,'COMBAT',{attackers:['fly','men'],targetPlayerId:'b'});
- assert.equal(act(s,'RESOLVE_COMBAT',{confirm:true,blocks:[{attackerId:'fly',blockerId:'g1'}]}).ok,false);
- assert.equal(act(s,'RESOLVE_COMBAT',{confirm:true,blocks:[{attackerId:'men',blockerId:'g1'}]}).ok,false);
- assert.equal(act(s,'RESOLVE_COMBAT',{confirm:true,blocks:[{attackerId:'fly',blockerId:'reach'},{attackerId:'men',blockerId:'g1'},{attackerId:'men',blockerId:'g2'}]}).ok,true);
+ assert.equal(act(s,'DECLARE_BLOCKS',{blocks:[{attackerId:'fly',blockerId:'g1'}]},'b').ok,false);
+ assert.equal(act(s,'DECLARE_BLOCKS',{blocks:[{attackerId:'men',blockerId:'g1'}]},'b').ok,false);
+ assert.equal(act(s,'DECLARE_BLOCKS',{blocks:[{attackerId:'fly',blockerId:'reach'},{attackerId:'men',blockerId:'g1'},{attackerId:'men',blockerId:'g2'}]},'b').ok,true);
 });
 
 test('defender declares blocks; attacker resolves with them; bots block automatically',()=>{

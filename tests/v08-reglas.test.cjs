@@ -33,7 +33,7 @@ test('Ayara: drena al entrar ella u otra criatura negra; su habilidad sacrifica 
 test('Bastion of Remembrance: cada criatura tuya que muere (también fichas) drena',()=>{
  let s=game();const a=s.players[0];a.battlefield=[card('bas','Bastion of Remembrance','Enchantment','Whenever a creature you control dies, each opponent loses 1 life and you gain 1 life.'),rat('r1'),rat('t1',{token:true})];
  s.players[1].battlefield=[bear('b1')];
- s=ok(s,'COMBAT',{attackers:['r1','t1'],targetPlayerId:'b'});s=ok(s,'RESOLVE_COMBAT',{confirm:true,blocks:[{attackerId:'r1',blockerId:'b1'}]});
+ s=ok(s,'COMBAT',{attackers:['r1','t1'],targetPlayerId:'b'});s=ok(s,'DECLARE_BLOCKS',{blocks:[{attackerId:'r1',blockerId:'b1'}]},'b');s=ok(s,'RESOLVE_COMBAT',{confirm:true});
  assert.equal(s.stack.length,1);s=drain(s);assert.equal(s.players[1].life,40-1-1);
  s=ok(s,'COUNTER',{iid:'t1',name:'-1/-1',delta:1});s=drain(s);assert.equal(s.players[1].life,37);assert.equal(s.players[0].battlefield.length,1);
 });
@@ -81,10 +81,10 @@ test('objetivos con filtro, -X/-X dinámico y drenaje por devoción',()=>{
  a.battlefield=[card('sw1','Swamp','Basic Land — Swamp'),card('sw2','Swamp','Basic Land — Swamp'),crit('k','Knight','Knight','',2,2,{mana_cost:'{B}{B}',colors:['B']})];
  s.players[1].battlefield=[bear('b1'),crit('blk','Black Bear','Bear','',2,2,{colors:['B']})];
  a.hand=[card('db','Doom Blade','Instant','Destroy target nonblack creature.'),card('df','Defile','Instant','Target creature gets -1/-1 until end of turn for each Swamp you control.'),crit('gm','Gray Merchant of Asphodel','Zombie','When Gray Merchant of Asphodel enters, each opponent loses X life, where X is your devotion to black. You gain life equal to the life lost this way.',2,4,{mana_cost:'{3}{B}{B}'})];
- s=ok(s,'CAST',{iid:'db'});const opts=MC.effectPlan(s,s.stack[0]).targeted[0].options.map(o=>o.target.iid);assert(opts.includes('b1'));assert(!opts.includes('blk'));assert(!opts.includes('k'));
+ s=ok(s,'CAST',{unpaid:true,iid:'db'});const opts=MC.effectPlan(s,s.stack[0]).targeted[0].options.map(o=>o.target.iid);assert(opts.includes('b1'));assert(!opts.includes('blk'));assert(!opts.includes('k'));
  s=ok(s,'RESOLVE',{targets:[{playerId:'b',iid:'b1'}]});
- s=ok(s,'CAST',{iid:'df'});s=ok(s,'RESOLVE',{targets:[{playerId:'b',iid:'blk'}]});assert.equal(s.players[1].battlefield.length,0,'-2/-2 mata al oso 2/2');
- s=ok(s,'CAST',{iid:'gm'});s=ok(s,'RESOLVE');s=drain(s);assert.equal(s.players[1].life,36);assert.equal(s.players[0].life,44);
+ s=ok(s,'CAST',{unpaid:true,iid:'df'});s=ok(s,'RESOLVE',{targets:[{playerId:'b',iid:'blk'}]});assert.equal(s.players[1].battlefield.length,0,'-2/-2 mata al oso 2/2');
+ s=ok(s,'CAST',{unpaid:true,iid:'gm'});s=ok(s,'RESOLVE');s=drain(s);assert.equal(s.players[1].life,36);assert.equal(s.players[0].life,44);
 });
 
 test('equipo: Swiftfoot Boots se equipa, da antimaleficio y prisa; el rival ya no la puede elegir',()=>{
@@ -109,7 +109,7 @@ test('costes adicionales y reducción de coste',()=>{
 test('mantenimiento, daño de combate, disparos opcionales y turno adicional',()=>{
  let s=game();const a=s.players[0];a.library=[bear('l1'),bear('l2'),bear('l3')];s.players[1].library=[bear('m1'),bear('m2')];
  a.battlefield=[card('bb','Bitterblossom','Tribal Enchantment — Faerie','At the beginning of your upkeep, you lose 1 life and create a 1/1 black Faerie Rogue creature token with flying.'),crit('ninja','Ninja','Human Ninja','Whenever Ninja deals combat damage to a player, you may draw a card.',2,2)];
- s=ok(s,'COMBAT',{attackers:['ninja'],targetPlayerId:'b'});s=ok(s,'RESOLVE_COMBAT',{confirm:true,blocks:[]});
+ s=ok(s,'COMBAT',{attackers:['ninja'],targetPlayerId:'b'});s=ok(s,'DECLARE_BLOCKS',{blocks:[]},'b');s=ok(s,'RESOLVE_COMBAT',{confirm:true});
  assert.equal(s.stack.length,1);assert.equal(s.stack[0].optional,true);s=ok(s,'RESOLVE',{decline:true});assert.equal(s.players[0].hand.length,0);
  a.hand=[];s.players[0].hand=[card('tw','Time Walk','Sorcery','Take an extra turn after this one.')];
  s=ok(s,'NEXT_PHASE');s=ok(s,'CAST',{iid:'tw'});s=ok(s,'RESOLVE');
@@ -204,9 +204,9 @@ test('morbid, delve, convocar y rueda',()=>{
  a.graveyard=['g1','g2','g3','g4','g5'].map(i=>bear(i));a.battlefield=[bear('c1'),bear('c2'),card('isl','Island','Basic Land — Island')];
  s.players[1].battlefield=[crit('big','Giant','Giant','',5,5),rat('sm')];
  a.hand=[card('ts','Tragic Slip','Instant','Target creature gets -1/-1 until end of turn.\nMorbid — That creature gets -13/-13 until end of turn instead if a creature died this turn.',{mana_cost:'{B}'}),card('tc','Treasure Cruise','Sorcery','Delve\nDraw three cards.',{mana_cost:'{7}{U}'}),card('cv','Convoker','Sorcery','Convoke\nDraw a card.',{mana_cost:'{2}'}),card('wf','Windfall','Sorcery','Each player discards their hand, then draws cards equal to the greatest number of cards a player discarded this way.',{mana_cost:'{2}{U}'})];
- s=ok(s,'CAST',{iid:'ts'});s=ok(s,'RESOLVE',{targets:[{playerId:'b',iid:'sm'}]});assert.equal(s.players[1].battlefield.length,1);
+ s=ok(s,'CAST',{unpaid:true,iid:'ts'});s=ok(s,'RESOLVE',{targets:[{playerId:'b',iid:'sm'}]});assert.equal(s.players[1].battlefield.length,1);
  s.players[0].hand.push(card('ts2','Tragic Slip','Instant','Target creature gets -1/-1 until end of turn.\nMorbid — That creature gets -13/-13 until end of turn instead if a creature died this turn.'));
- s=ok(s,'CAST',{iid:'ts2'});s=ok(s,'RESOLVE',{targets:[{playerId:'b',iid:'big'}]});assert.equal(s.players[1].battlefield.length,0,'morbid: -13/-13');
+ s=ok(s,'CAST',{unpaid:true,iid:'ts2'});s=ok(s,'RESOLVE',{targets:[{playerId:'b',iid:'big'}]});assert.equal(s.players[1].battlefield.length,0,'morbid: -13/-13');
  s.players[0].mana=mana({U:1,C:2});s=ok(s,'CAST',{iid:'tc',payMana:true,delve:5});assert.equal(s.players[0].exile.length,5);assert.equal(s.players[0].mana.U,0);s=ok(s,'RESOLVE');
  s=ok(s,'CAST',{iid:'cv',payMana:true,convoke:['c1','c2']});assert(s.players[0].battlefield.find(c=>c.iid==='c1').tapped);s=ok(s,'RESOLVE');
  s.players[1].hand=[bear('x1')];const n=s.players[0].hand.length;s.players[0].mana=mana({U:1,C:2});s=ok(s,'CAST',{iid:'wf',payMana:true});s=ok(s,'RESOLVE');assert.equal(s.players[1].hand.length,n-1,'todos roban la mano más grande descartada');
@@ -219,7 +219,7 @@ test('retrasados, copias, enderezar en turno ajeno, barajar en vez de cementerio
  a.mana=mana({B:4,C:2});
  s=ok(s,'ACTIVATE',{iid:'pr',index:0,discard:['fodder']});s=ok(s,'RESOLVE');const copies=s.players[0].battlefield.filter(c=>c.name==='Pack Rat');assert.equal(copies.length,2);assert.equal(MC.power(copies[1],s.players[0]),3);
  s.players[1].hand=[card('sp','Spell','Sorcery','Draw a card.'),bear('bh')];s.activePlayerId='b';
- s=ok(s,'NEXT_PHASE',{},'b');s.players[1].mana=mana({C:1});s=ok(s,'CAST',{iid:'sp'},'b');s=ok(s,'CAST',{iid:'ad'});s=ok(s,'RESOLVE',{targets:[{spellId:s.stack[0].id}]});assert.equal(s.delayed.length,2);
+ s.players[1].mana=mana({C:1});s=ok(s,'CAST',{iid:'sp'},'b');s=ok(s,'CAST',{iid:'ad'});s=ok(s,'RESOLVE',{targets:[{spellId:s.stack[0].id}]});assert.equal(s.delayed.length,2);
  s=ok(s,'NEXT_TURN',{},'b');assert(!s.players[0].battlefield.find(c=>c.iid==='ws').tapped,'Waterskin se endereza en el turno de otro');
  assert.equal(s.stack.length,2,'dos robos retrasados');const ha=s.players[0].hand.length;s=drain(s);assert.equal(s.players[0].hand.length,ha+1,'roba 1 por el efecto retrasado');assert.equal(s.players[1].hand.length,3,'el rival roba 2');
  s=ok(s,'COUNTER',{iid:'dv',name:'-1/-1',delta:1});assert.equal(s.stack.at(-1).optional,true);s.players[0].mana=mana({B:1});s=ok(s,'RESOLVE',{targets:[{playerId:'b'}]});assert.equal(s.players[0].mana.B,0,'pagó {B}');assert.equal(s.prompts.find(x=>x.playerId==='b').kind,'discard');
@@ -258,7 +258,7 @@ test('veneno: infectar, toxic y proliferar',()=>{
  let s=game();const a=s.players[0];
  a.battlefield=[crit('inf','Plague Stinger','Phyrexian Insect','Flying\nInfect',1,1),crit('tox','Bilious Skulldweller','Phyrexian Worm','Deathtouch\nToxic 1',1,1),card('ring','Ring','Artifact','',{counters:{Carga:1}})];
  a.hand=[card('pro','Proliferate Spell','Sorcery','Each opponent gets a poison counter.\nProliferate.')];
- s=ok(s,'COMBAT',{attackers:['inf','tox'],targetPlayerId:'b'});s=ok(s,'RESOLVE_COMBAT',{confirm:true,blocks:[]});
+ s=ok(s,'COMBAT',{attackers:['inf','tox'],targetPlayerId:'b'});s=ok(s,'DECLARE_BLOCKS',{blocks:[]},'b');s=ok(s,'RESOLVE_COMBAT',{confirm:true});
  assert.equal(s.players[1].poison,2);assert.equal(s.players[1].life,39,'infectar no quita vidas; toxic sí suma veneno además del daño');
  s=ok(s,'NEXT_PHASE');s=ok(s,'CAST',{iid:'pro'});s=ok(s,'RESOLVE');assert.equal(s.players[1].poison,4);assert.equal(s.players[0].battlefield.find(c=>c.iid==='ring').counters.Carga,2);
 });
@@ -292,16 +292,17 @@ test('caras dobles, modales parciales, eminencia, «uno o más», ganar vida y c
 });
 
 test('atacar a varios rivales: cada defensor bloquea solo lo que le ataca y el daño va a quien corresponde',()=>{
- let s=game(3,['c']);const a=s.players[0];
+ let s=game(3);const a=s.players[0];
  a.battlefield=[bear('x1',{isCommander:true}),bear('x2'),crit('x3','Ninja','Human Ninja','Whenever Ninja deals combat damage to a player, draw a card.',1,1)];a.library=[bear('l1')];
  s.players[1].battlefield=[rat('rb')];s.players[2].battlefield=[rat('rc')];
  assert.equal(act(s,'COMBAT',{assignments:[{attackerId:'x1',targetPlayerId:'a'}]}).ok,false,'no puedes atacarte');
  s=ok(s,'COMBAT',{assignments:[{attackerId:'x1',targetPlayerId:'b'},{attackerId:'x2',targetPlayerId:'c'},{attackerId:'x3',targetPlayerId:'c'}]});
  const c=s.pendingCombat;assert.deepEqual(c.targets,{x1:'b',x2:'c',x3:'c'});assert.equal(c.blocksDeclared,false,'B (humano) aún no declara');
- assert(c.blocks.every(b=>['x2','x3'].includes(b.attackerId)),'el bot C solo bloquea lo que le ataca');
  assert.equal(act(s,'DECLARE_BLOCKS',{blocks:[{attackerId:'x2',blockerId:'rb'}]},'b').ok,false,'B no puede bloquear a quien ataca a C');
- s=ok(s,'DECLARE_BLOCKS',{blocks:[]},'b');assert.equal(s.pendingCombat.blocksDeclared,true);
- s=ok(s,'RESOLVE_COMBAT',{confirm:true,blocks:[{attackerId:'x2',blockerId:'rc'}]});s=drain(s);
+ s=ok(s,'DECLARE_BLOCKS',{blocks:[]},'b');assert.equal(s.pendingCombat.blocksDeclared,false,'falta C');
+ assert.match(act(s,'RESOLVE_COMBAT',{confirm:true}).error,/Faltan los bloqueos de C/);
+ assert.equal(act(s,'DECLARE_BLOCKS',{blocks:[]},'b').ok,false,'B ya declaró');
+ s=ok(s,'DECLARE_BLOCKS',{blocks:[{attackerId:'x2',blockerId:'rc'}]},'c');s=ok(s,'RESOLVE_COMBAT',{confirm:true});s=drain(s);
  assert.equal(s.players[1].life,38);assert.equal(s.players[1].commanderDamage.a,2);
  assert.equal(s.players[2].life,39);assert.equal(s.players[0].hand.length,1,'el Ninja robó al dañar a C');
  assert(!s.players[2].battlefield.some(x=>x.iid==='rc'),'la rata de C murió bloqueando');
