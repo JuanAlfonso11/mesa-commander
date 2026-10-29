@@ -93,7 +93,7 @@ test('equipo: Swiftfoot Boots se equipa, da antimaleficio y prisa; el rival ya n
  s=ok(s,'RESOLVE');assert.equal(s.players[0].battlefield.find(c=>c.iid==='boots').attachedTo,'c1');
  const hero=s.players[0].battlefield.find(c=>c.iid==='c1');assert(MC.hasKw(hero,'Haste'));assert(MC.hasKw(hero,'Hexproof'));
  s.players[1].hand=[card('m','Murder','Instant','Destroy target creature.')];s.activePlayerId='b';
- s=ok(s,'CAST',{iid:'m'},'b');assert.equal(MC.effectPlan(s,s.stack[0]).targeted[0].options.length,0);
+ assert.match(act(s,'CAST',{iid:'m'},'b').error,/objetivos legales/,'antimaleficio: Murder no tiene objetivo');
 });
 
 test('costes adicionales y reducción de coste',()=>{

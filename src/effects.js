@@ -494,6 +494,8 @@ function staticAbility(line){
  if((m=l.match(/^~'s power is equal to (?:the number of )?(.+)$/))){const a=parseAmount(m[1]);if(a)return {kind:'static',type:'cda',p:a};}
  if((m=l.match(/^(.+?) spells you cast cost \{(\d+)\} less to cast$/))){const spec=m[1]==='all'?{types:[],subtypes:[],any:true}:parseObj(m[1].replace(/ and /g,' or '));if(spec)return {kind:'static',type:'costReduce',spec,amount:+m[2]};}
  if((m=l.match(/^(.+?) spells you cast cost \{1\} less to cast for each (.+) counter on ~$/))){const spec=parseObj(m[1].replace(/ and /g,' or '));if(spec)return {kind:'static',type:'costReduce',spec,amount:{of:'counters',kind:cap(m[2])}};}
+ if((m=l.match(/^(?:(.+?) )?spells (your opponents cast )?cost \{(\d+)\} more to cast$/))){const spec=!m[1]?{types:[],subtypes:[],any:true}:parseObj(m[1].replace(/ and /g,' or '));if(spec)return {kind:'static',type:'costMore',spec,amount:+m[3],opp:!!m[2]};}
+ if(/^creatures can't attack you unless their controller pays \{2\} for each creature they control that's attacking you$/.test(l))return {kind:'static',type:'attackTax',n:2};
  if(/^you have no maximum hand size$/.test(l))return {kind:'static',type:'handSize',mine:Infinity};
  if(/^untap ~ during each other player's untap step$/.test(l))return {kind:'static',type:'untapOthers',all:false};
  if(/^untap all permanents you control during each other player's untap step$/.test(l))return {kind:'static',type:'untapOthers',all:true};

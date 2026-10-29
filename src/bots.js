@@ -83,13 +83,13 @@ function botTurn(MC,state,id){
  if(s.winnerId)return {state:s,events};
  // 3. Ataque.
  const plan=me.attackedTurn===s.turn?null:attackPlan(MC,s,me);
- if(plan){act('COMBAT',{attackers:plan.attackers,targetPlayerId:plan.targetId,autoEndTurn:true});drain();}else{act('NEXT_TURN');drain();}
+ if(plan&&act('COMBAT',{assignments:plan.assignments,autoEndTurn:true}))drain();else{act('NEXT_TURN');drain();}
  return {state:s,events};
 }
 function attackPlan(MC,s,me){
  const ready=me.battlefield.filter(c=>MC.isCreature(c)&&!c.tapped&&(!c.sick||kw(c,'Haste'))&&!kw(c,'Defender')&&MC.power(c,me)>0);
  const opps=opponents(s,me.id);if(!ready.length||!opps.length)return null;
- let best=null;
+ let best=null;const plans=[];
  for(const q of opps){
   const blockers=q.battlefield.filter(c=>MC.isCreature(c)&&!c.tapped);
   const chosen=ready.filter(a=>{
@@ -103,12 +103,14 @@ function attackPlan(MC,s,me){
   const group=lethal?ready:chosen;if(!group.length)continue;
   const dmg=group.reduce((n,a)=>n+MC.power(a,me),0);
   const score=dmg*2-q.life*0.15+(lethal?100:0)-blockers.length*0.5;
-  if(!best||score>best.score)best={targetId:q.id,attackers:group.map(c=>c.iid),score};
+  plans.push({q,group,score});if(!best||score>best.score)best={targetId:q.id,attackers:group.map(c=>c.iid),score};
  }
  if(!best)return null;
+ // Reparte: cada atacante va al rival mejor puntuado contra el que es seguro atacar (un letal se lleva a todos).
+ {const taken=new Map();for(const pl of plans.sort((x,y)=>y.score-x.score))for(const c of pl.group)if(!taken.has(c.iid))taken.set(c.iid,pl.q.id);best.assignments=[...taken].map(([attackerId,targetPlayerId])=>({attackerId,targetPlayerId}));best.attackers=best.assignments.map(x=>x.attackerId);}
  // Guarda defensores si los rivales pueden matarle en su próximo ataque.
  const incoming=opps.reduce((n,q)=>n+q.battlefield.filter(MC.isCreature).reduce((m,c)=>m+MC.power(c,q),0),0);
- if(incoming>=me.life&&best.score<100){const keep=me.battlefield.filter(c=>MC.isCreature(c)&&best.attackers.includes(c.iid)&&!kw(c,'Vigilance')).sort((a,b)=>MC.toughness(b)-MC.toughness(a)).slice(0,Math.ceil(best.attackers.length/2)).map(c=>c.iid);best.attackers=best.attackers.filter(x=>!keep.includes(x));if(!best.attackers.length)return null;}
+ if(incoming>=me.life&&best.score<100){const keep=me.battlefield.filter(c=>MC.isCreature(c)&&best.attackers.includes(c.iid)&&!kw(c,'Vigilance')).sort((a,b)=>MC.toughness(b)-MC.toughness(a)).slice(0,Math.ceil(best.attackers.length/2)).map(c=>c.iid);best.attackers=best.attackers.filter(x=>!keep.includes(x));best.assignments=best.assignments.filter(x=>!keep.includes(x.attackerId));if(!best.attackers.length)return null;}
  return best;
 }
 // Bloqueos sugeridos para el defensor del combate pendiente (bot o ayuda para humanos).

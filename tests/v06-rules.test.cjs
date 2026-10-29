@@ -46,7 +46,7 @@ test('targeted removal, damage to creatures and commander returns to command zon
 });
 
 test('invalid targets roll back; missing targets fall back to manual resolution',()=>{
- let s=game();s.players[0].hand=[card('m','Murder','Instant','Destroy target creature.')];s=ok(s,'CAST',{iid:'m'});
+ let s=game();assert.match(act(s,'CAST',{iid:'x'}).error||'',/./);s.players[0].hand=[card('m','Murder','Instant','Destroy target creature.')];assert.match(act(s,'CAST',{iid:'m'}).error,/objetivos legales/,'601.2c');s.players[1].battlefield=[bear('bb')];s=ok(s,'CAST',{iid:'m'});
  const before=JSON.stringify(s);const bad=act(s,'RESOLVE',{targets:[{playerId:'b',iid:'ghost'}]});assert.equal(bad.ok,false);assert.equal(JSON.stringify(bad.state),before);
  const r=act(s,'RESOLVE',{});assert.equal(r.ok,true);assert(r.events.some(e=>e.type==='manual'));
 });

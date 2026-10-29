@@ -148,6 +148,12 @@ La mesa ahora lee el texto Oracle de cada carta y aplica sola sus habilidades. L
   Heraldic Banner, Orcrist, Witch's Cottage, Skullsnatcher, destreza concedida, el turno pasa si el activo pierde, decks de
   práctica con su texto real (Marrow-Gnawer ya se activa), botón «🛡 Bloquear» cuando te atacan y «Más tarde» en elecciones.
 
+- **0.8.8**: el color de tu lado de la mesa sigue los colores de maná de tu comandante (cámbialo en «Vista» o en
+  «🎨 Vista y color»), los objetivos se eligen al lanzar y el hechizo no hace nada si dejan de ser legales (601.2c / 608.2b),
+  se puede atacar a planeswalkers (506.3), Thalia, Sphere of Resistance y Grand Arbiter suben costes, Propaganda y Ghostly
+  Prison cobran por atacar, los bots reparten el ataque entre rivales y, en PC, la mano queda fija abajo y las cartas
+  rivales se ven más grandes.
+
 `node tools/scryfall-coverage.cjs` descarga las cartas de Scryfall y mide qué porcentaje de las legales en Commander aplica el motor solo (y las frases que faltan, ordenadas por popularidad en EDHREC).
 `node tools/coverage.cjs <links de Archidekt>` mide qué cartas de un deck quedan automáticas y lista las líneas manuales.
 `node tools/fixture.cjs tools/fixtures/decks.json <links>` guarda decks y `node tools/sim.cjs` juega partidas completas entre bots con ellos para detectar errores del motor.
