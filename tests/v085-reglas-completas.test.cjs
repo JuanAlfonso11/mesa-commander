@@ -11,6 +11,7 @@ const rat=(iid,extra={})=>crit(iid,'Rat '+iid,'Rat','',1,1,{colors:['B'],...extr
 const bear=(iid,extra={})=>crit(iid,'Bear '+iid,'Bear','',2,2,{colors:['G'],...extra});
 const drain=s=>{for(let i=0;i<30&&s.stack.length;i++)s=ok(s,'RESOLVE',{},s.stack.at(-1).controllerId);return s;};
 
+const sp=(iid,name,type,text)=>card(iid,name,type,text);
 
 test('704.5b: robar de una biblioteca vacía hace perder la partida',()=>{
  let s=game(3);s.players[1].library=[];s=ok(s,'DRAW',{count:1},'b');
@@ -43,4 +44,16 @@ test('103.5: mulligan de Londres; el primero es gratis en multijugador y no en d
  let t2=MC.createGame({seed:2,players:['a','b'].map(id=>({id,name:id,deck}))});
  assert.equal(t2.players[0].turnDrawn,true,'103.8a: en dos jugadores quien empieza no roba');assert.equal(t2.players[1].turnDrawn,false);
  t2=ok(t2,'MULLIGAN',{},'b');assert.equal(t2.prompts[0].min,1,'sin mulligan gratis en dos jugadores');
+});
+
+test('903.9: preferencias de zona del comandante (por defecto como MTGO)',()=>{
+ let s=game();const cmd=()=>crit('cmd','Tana','Elf Druid','',2,2,{isCommander:true});
+ s.players[0].battlefield=[cmd()];s.players[1].hand=[sp('mu','Murder','Instant','Destroy target creature.'),sp('bo','Unsummon','Instant',"Return target creature to its owner's hand.")];
+ s=ok(s,'CAST',{iid:'mu'},'b');s=ok(s,'RESOLVE',{targets:[{playerId:'a',iid:'cmd'}]});assert(s.players[0].command.some(x=>x.iid==='cmd'),'por defecto: zona de mando en vez de cementerio');
+ s.players[0].command=[];s.players[0].battlefield=[cmd()];
+ assert.equal(act(s,'COMMANDER_ZONES',{iid:'cmd',prefs:{graveyard:false}},'b').ok,false,'solo el dueño');
+ s=ok(s,'COMMANDER_ZONES',{iid:'cmd',prefs:{graveyard:false,hand:true}});
+ s=ok(s,'CAST',{iid:'bo'},'b');s=ok(s,'RESOLVE',{targets:[{playerId:'a',iid:'cmd'}]});assert(s.players[0].command.some(x=>x.iid==='cmd'),'mano → zona de mando al marcarlo');
+ const c=s.players[0].command.pop();s.players[0].battlefield=[c];s.players[1].hand=[sp('m2','Murder','Instant','Destroy target creature.')];
+ s=ok(s,'CAST',{iid:'m2'},'b');s=ok(s,'RESOLVE',{targets:[{playerId:'a',iid:'cmd'}]});assert(s.players[0].graveyard.some(x=>x.iid==='cmd'),'se queda en el cementerio si lo desmarcas');
 });

@@ -136,6 +136,10 @@ La mesa ahora lee el texto Oracle de cada carta y aplica sola sus habilidades. L
   vacía al terminar cada fase (106.4), mulligan de Londres con el primero gratis en multijugador (103.5c) y en dos jugadores
   quien empieza no roba en su primer turno (103.8a).
 
+- **0.8.6 (ideas de la guía multijugador de MTGO)**: escudo 🛡 con el daño de comandante recibido en cada asiento
+  («16 de 21 — Marrow-Gnawer (Juan)»; rojo desde 15) y preferencias de zona por comandante (903.9): en su ficha eliges si va a la
+  zona de mando en vez del cementerio, exilio, biblioteca o mano. Por defecto, como en MTGO: todo a la zona de mando menos la mano.
+
 `node tools/scryfall-coverage.cjs` descarga las cartas de Scryfall y mide qué porcentaje de las legales en Commander aplica el motor solo (y las frases que faltan, ordenadas por popularidad en EDHREC).
 `node tools/coverage.cjs <links de Archidekt>` mide qué cartas de un deck quedan automáticas y lista las líneas manuales.
 `node tools/fixture.cjs tools/fixtures/decks.json <links>` guarda decks y `node tools/sim.cjs` juega partidas completas entre bots con ellos para detectar errores del motor.
