@@ -1,7 +1,7 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const MC=require('../src/core.js');
 let seq=0;
-function game(){const s=MC.createGame({seed:3,players:['a','b'].map(id=>({id,name:id.toUpperCase(),deck:{cards:[]}}))});for(const p of s.players){p.hand=[];p.battlefield=[];p.library=[];p.turnDrawn=true;}return s;}
+function game(){const s=MC.createGame({seed:3,players:['a','b'].map(id=>({id,name:id.toUpperCase(),deck:{cards:[]}}))});for(const p of s.players){p.hand=[];p.battlefield=[];p.library=Array.from({length:10},(_,i)=>({iid:p.id+'-lib'+i,name:'Wastes',type_line:'Basic Land',oracle_text:'',counters:{}}));p.turnDrawn=true;}return s;}
 function act(s,type,payload={},actorId='a'){return MC.dispatch(s,{id:'v7-'+(++seq),type,payload,actorId});}
 function ok(s,type,payload={},actorId='a'){const r=act(s,type,payload,actorId);assert.equal(r.ok,true,r.error);return r.state;}
 const bear=(iid,extra={})=>({iid,name:'Bear '+iid,type_line:'Creature — Bear',power:'2',toughness:'2',tapped:false,sick:false,damage:0,counters:{},...extra});
@@ -27,9 +27,9 @@ test('fichas con tipo, cantidad, habilidades y artefactos; las ratas cuentan par
  s=ok(s,'MOVE',{iid:t.iid,from:'battlefield',to:'graveyard'});assert(!s.players[0].graveyard.some(c=>c.iid===t.iid));
 });
 
-test('la reserva de maná dura toda la fase y el turno; se vacía al pasar turno',()=>{
- let s=game();s=ok(s,'MANA',{color:'G',delta:3});s=ok(s,'NEXT_PHASE');s=ok(s,'NEXT_PHASE');assert.equal(s.players[0].mana.G,3);
- s=ok(s,'MANA',{color:'G',delta:-1});assert.equal(s.players[0].mana.G,2);s=ok(s,'NEXT_TURN');assert.equal(s.players[0].mana.G,0);
+test('la reserva de maná se conserva dentro de la fase y se vacía al terminarla (106.4)',()=>{
+ let s=game();s=ok(s,'MANA',{color:'G',delta:3});s=ok(s,'MANA',{color:'G',delta:-1});assert.equal(s.players[0].mana.G,2);
+ s=ok(s,'NEXT_PHASE');assert.equal(s.players[0].mana.G,0);s=ok(s,'MANA',{color:'G',delta:1});s=ok(s,'NEXT_TURN');assert.equal(s.players[0].mana.G,0);
 });
 
 test('tomar del cementerio rival: la carta recuerda a su dueño y vuelve a su cementerio',()=>{

@@ -4,7 +4,7 @@ App de fans de Magic: The Gathering, Commander de mesa libre. Interfaz española
 
 ## Uso
 
-Abre la web publicada, pulsa **Crear una mesa**, elige deck y mesa local con bots. Abre cartas de tu mano para jugar tierras o lanzar hechizos. Acuerda prioridad y resuelve la pila; aplica los efectos manualmente. **Jugar turno del bot** ejecuta un turno, pausando para confirmar bloqueos. El daño a criaturas y habilidades especiales se resuelve manualmente. El primer turno requiere pulsar Robar; los siguientes roban al pasar turno.
+Abre la web publicada, pulsa **Crear una mesa**, elige deck y mesa local con bots. Abre cartas de tu mano para jugar tierras o lanzar hechizos. Acuerda prioridad y resuelve la pila; aplica los efectos manualmente. **Jugar turno del bot** ejecuta un turno, pausando para confirmar bloqueos. El daño a criaturas y habilidades especiales se resuelve manualmente. En partidas de dos jugadores quien empieza no roba en su primer turno; en multijugador todos pulsan Robar en el primero y los siguientes roban al pasar turno.
 
 Los dos decks incluidos son listas de laboratorio sencillas, no precons ni recomendaciones competitivas. Usan excepciones de copias de Rat Colony y Persistent Petitioners. Los resúmenes offline son explicaciones propias, no texto Oracle actualizado.
 
@@ -80,7 +80,7 @@ Archidekt solo permite que su API la lean páginas de `localhost:3000`, y GitHub
 - **Fichas:** fichas comunes listas (Rata, Draco, Soldado, Zombi, Goblin, Saprolín, Bestia, Espíritu, Tesoro, Pista, Comida), cantidad de 1 a 20, tipo en inglés para que cuente en cartas como Rat Colony, colores, habilidades y «entra girada». Al tocar una ficha puedes duplicarla. Una ficha que sale del campo deja de existir.
 - **Contadores:** insignia abajo a la izquierda de la carta. Editor con − y + para +1/+1, -1/-1, +1/+0, +0/+1, -1/-0, -0/-1 y contadores con nombre (Lealtad, Carga…). La fuerza/resistencia mostrada ya incluye contadores, Rat Colony y daño marcado.
 - **Habilidades:** en una criatura del campo puedes dar o quitar vuela, prisa, vigilancia, arrollar, vínculo vital, toque mortal, alcance, amenaza, dañar primero, dañar dos veces, indestructible y defensor. Se ven como iconos arriba a la izquierda y el combate las aplica. Al salir del campo vuelve a sus habilidades impresas.
-- **Maná:** − y + por color y botón Vaciar. La reserva se conserva hasta que pasas el turno.
+- **Maná:** − y + por color y botón Vaciar. La reserva se vacía al terminar cada fase, como en las reglas oficiales (106.4).
 - **Cementerio y exilio rivales:** se pueden ver desde su asiento y tomar una carta con «Tomar» (mano, campo, cementerio o exilio). La carta recuerda a su dueño y vuelve a sus zonas cuando muere o se exilia.
 - **Biblioteca:** la búsqueda muestra las cartas agrupadas y en orden alfabético, sin revelar su posición, con botón Barajar.
 
@@ -129,6 +129,12 @@ La mesa ahora lee el texto Oracle de cada carta y aplica sola sus habilidades. L
   pelear y morder, «contrarresta a menos que pague», persistir, inmortal, enaltecido, aniquilador, tormenta, segundo dividido,
   afinidad por artefactos, devoid, «no se endereza», saltar el robo, robo extra para todos, doblar vida y fichas,
   disparos al robar (Sheoldred, Psychosis Crawler) y fetchlands que se enderezan con 4 tierras.
+
+- **0.8.5 (Reglas Completas del 7 de agosto de 2026)**: perder al robar de una biblioteca vacía (704.5b), quien pierde sale de la
+  partida con sus cartas y lo ajeno que controlaba se exilia (800.4a; si corriges su vida a mano vuelve con sus permanentes),
+  la corona del monarca pasa al jugador activo (725.4), contadores +1/+1 y -1/-1 se anulan (704.5q), la reserva de maná se
+  vacía al terminar cada fase (106.4), mulligan de Londres con el primero gratis en multijugador (103.5c) y en dos jugadores
+  quien empieza no roba en su primer turno (103.8a).
 
 `node tools/scryfall-coverage.cjs` descarga las cartas de Scryfall y mide qué porcentaje de las legales en Commander aplica el motor solo (y las frases que faltan, ordenadas por popularidad en EDHREC).
 `node tools/coverage.cjs <links de Archidekt>` mide qué cartas de un deck quedan automáticas y lista las líneas manuales.

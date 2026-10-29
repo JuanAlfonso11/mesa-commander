@@ -2,7 +2,7 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const MC=require('../src/core.js'),FX=require('../src/effects.js');
 let seq=0;
 const mana=v=>({W:0,U:0,B:0,R:0,G:0,C:0,...v});
-function game(n=2,bots=[]){const s=MC.createGame({seed:5,players:['a','b','c'].slice(0,n).map(id=>({id,name:id.toUpperCase(),bot:bots.includes(id),deck:{cards:[]}}))});for(const p of s.players){p.hand=[];p.battlefield=[];p.library=[];p.mana=mana({});p.turnDrawn=true;}s.phase=1;return s;}
+function game(n=2,bots=[]){const s=MC.createGame({seed:5,players:['a','b','c'].slice(0,n).map(id=>({id,name:id.toUpperCase(),bot:bots.includes(id),deck:{cards:[]}}))});for(const p of s.players){p.hand=[];p.battlefield=[];p.library=Array.from({length:10},(_,i)=>({iid:p.id+'-lib'+i,name:'Wastes',type_line:'Basic Land',oracle_text:'',counters:{}}));p.mana=mana({});p.turnDrawn=true;}s.phase=1;return s;}
 function act(s,type,payload={},actorId='a'){return MC.dispatch(s,{id:'v8-'+(++seq),type,payload,actorId});}
 function ok(s,type,payload={},actorId='a'){const r=act(s,type,payload,actorId);assert.equal(r.ok,true,r.error);return r.state;}
 const card=(iid,name,type_line,oracle_text='',extra={})=>({iid,name,type_line,oracle_text,mana_cost:'{0}',tapped:false,sick:false,damage:0,counters:{},...extra});
@@ -169,13 +169,13 @@ test('sobrecarga, retroceso, estímulo, escarmiento y ciclo',()=>{
 test('ninjutsu, regeneración, monstruosidad y bushido',()=>{
  let s=game();const a=s.players[0];a.mana=mana({B:10,C:10});
  a.battlefield=[rat('att'),crit('kuro',"Kuro's Taken",'Rat Samurai',"Bushido 1\n{1}{B}: Regenerate Kuro's Taken.",1,1),crit('mon','Monster','Beast','{3}{B}{B}: Monstrosity 3.\nAs long as Monster is monstrous, it has menace.',2,2)];
- a.hand=[crit('nin','Ninja of the Deep Hours','Human Ninja','Ninjutsu {1}{U}\nWhenever Ninja of the Deep Hours deals combat damage to a player, you may draw a card.',2,2)];a.mana.U=1;a.library=[bear('l1')];
+ a.hand=[crit('nin','Ninja of the Deep Hours','Human Ninja','Ninjutsu {1}{U}\nWhenever Ninja of the Deep Hours deals combat damage to a player, you may draw a card.',2,2)];a.library=[bear('l1')];
  s.players[1].battlefield=[crit('blk','Wall','Wall','',0,4)];
  s=ok(s,'ACTIVATE',{iid:'mon',index:0});s=ok(s,'RESOLVE');const mon=s.players[0].battlefield.find(c=>c.iid==='mon');assert(mon.monstrous);assert.equal(MC.power(mon,s.players[0]),5);assert(MC.hasKw(mon,'Menace'));
  s=ok(s,'ACTIVATE',{iid:'kuro',index:0});s=ok(s,'RESOLVE');
  s=ok(s,'COMBAT',{attackers:['att','kuro'],targetPlayerId:'b'});
  assert.match(act(s,'NINJUTSU',{iid:'nin',returnIid:'att'}).error,/bloqueos/);
- s=ok(s,'DECLARE_BLOCKS',{blocks:[{attackerId:'kuro',blockerId:'blk'}]},'b');
+ s=ok(s,'DECLARE_BLOCKS',{blocks:[{attackerId:'kuro',blockerId:'blk'}]},'b');s.players[0].mana=mana({U:1,C:1});// 106.4: el maná de la fase principal ya se perdió
  assert.match(act(s,'NINJUTSU',{iid:'nin',returnIid:'kuro'}).error,/no haya sido bloqueada/);
  s=ok(s,'NINJUTSU',{iid:'nin',returnIid:'att'});assert(s.players[0].hand.some(c=>c.iid==='att'));assert(s.pendingCombat.attackers.includes('nin'));
  s=ok(s,'RESOLVE_COMBAT',{confirm:true});assert.equal(s.players[1].life,38);assert.equal(s.stack.length,1,'el ninja se dispara');s=ok(s,'RESOLVE');

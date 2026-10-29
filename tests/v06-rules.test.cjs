@@ -4,7 +4,7 @@ const MC=require('../src/core.js');
 const FX=require('../src/effects.js');
 const mana=v=>({W:0,U:0,B:0,R:0,G:0,C:0,...v});
 let seq=0;
-function game(n=3,bots=[]){const s=MC.createGame({seed:7,players:['a','b','c','d'].slice(0,n).map(id=>({id,name:id.toUpperCase(),bot:bots.includes(id),deck:{cards:[]}}))});for(const p of s.players){p.hand=[];p.battlefield=[];p.library=[];p.mana=mana({});p.turnDrawn=true;}return s;}
+function game(n=3,bots=[]){const s=MC.createGame({seed:7,players:['a','b','c','d'].slice(0,n).map(id=>({id,name:id.toUpperCase(),bot:bots.includes(id),deck:{cards:[]}}))});for(const p of s.players){p.hand=[];p.battlefield=[];p.library=Array.from({length:10},(_,i)=>({iid:p.id+'-lib'+i,name:'Wastes',type_line:'Basic Land',oracle_text:'',counters:{}}));p.mana=mana({});p.turnDrawn=true;}return s;}
 function act(s,type,payload={},actorId=s.activePlayerId){return MC.dispatch(s,{id:'v6-'+(++seq),type,payload,actorId});}
 function ok(s,type,payload={},actorId){const r=act(s,type,payload,actorId);assert.equal(r.ok,true,r.error);return r.state;}
 const card=(iid,name,type_line,oracle_text='',extra={})=>({iid,name,type_line,oracle_text,mana_cost:'{0}',tapped:false,sick:false,damage:0,counters:{},...extra});
@@ -125,7 +125,7 @@ test('stress: four bots play 40 turns with varied cards without errors or lost c
   card('l','Rampant Growth','Sorcery','Search your library for a basic land card, put it onto the battlefield tapped, then shuffle.',{mana_cost:'{1}{G}'}),card('l','Troll','Creature','',{power:'4',toughness:'4',keywords:['Trample'],mana_cost:'{3}{G}'}),card('l','Wrath of God','Sorcery','Destroy all creatures.',{mana_cost:'{2}{W}{W}'}),card('l','Mystery','Sorcery','Something nobody understands.',{mana_cost:'{1}'})];
  const deck=()=>({commander:card('c','Boss','Legendary Creature — Boss','',{power:'3',toughness:'3',mana_cost:'{2}{B}{G}',color_identity:['B','G']}),cards:Array.from({length:99},(_,i)=>{const c={...pool[i%pool.length]};delete c.iid;return c;})});
  let s=MC.createGame({seed:99,players:['a','b','c','d'].map(id=>({id,name:id,bot:true,deck:deck()}))});
- const count=st=>st.players.reduce((n,p)=>n+['library','hand','battlefield','graveyard','exile','command'].reduce((m,z)=>m+p[z].filter(c=>!c.token).length,0),0)+st.stack.filter(e=>!e.card.token).length;
+ const count=st=>st.players.reduce((n,p)=>n+['library','hand','battlefield','graveyard','exile','command','outside'].reduce((m,z)=>m+(p[z]||[]).filter(c=>!c.token).length,0),0)+st.stack.filter(e=>!e.card.token).length;
  const total=count(s);let turns=0;
  for(let i=0;i<400&&!s.winnerId&&turns<40;i++){
   const before=s.turn;
